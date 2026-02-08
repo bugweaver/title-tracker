@@ -150,13 +150,16 @@ const displayedTitles = computed(() => {
     }
     
     
-    // Sort by finished_at desc, then by ID desc
+    // Sort by "Smart Date" (finished_at OR updated_at) desc, then by ID desc
     return filtered.sort((a, b) => {
-        const dateA = a.finished_at ? new Date(a.finished_at) : null;
-        const dateB = b.finished_at ? new Date(b.finished_at) : null;
+        // Use finished_at if available (preserve completion history), otherwise updated_at (activity feed)
+        const getSortDate = (t: typeof a) => t.finished_at ? new Date(t.finished_at) : new Date(t.updated_at);
+        
+        const dateA = getSortDate(a);
+        const dateB = getSortDate(b);
 
-        const timeA = dateA ? dateA.getFullYear() * 100 + dateA.getMonth() : 0;
-        const timeB = dateB ? dateB.getFullYear() * 100 + dateB.getMonth() : 0;
+        const timeA = dateA.getFullYear() * 100 + dateA.getMonth();
+        const timeB = dateB.getFullYear() * 100 + dateB.getMonth();
 
         if (timeA !== timeB) {
             return timeB - timeA;
