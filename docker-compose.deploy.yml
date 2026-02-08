@@ -1,5 +1,6 @@
 services:
   backend:
+    build: ./backend
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/title-tracker/backend:latest
     container_name: title_tracker_backend
     restart: always
@@ -22,6 +23,7 @@ services:
       - tt_network
 
   frontend:
+    build: ./frontend
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/title-tracker/frontend:latest
     container_name: title_tracker_frontend
     restart: always
