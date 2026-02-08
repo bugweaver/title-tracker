@@ -11,6 +11,7 @@ from core.models.db_helper import db_helper
 from litestar import Litestar, Router
 from litestar.config.cors import CORSConfig
 from litestar.static_files import StaticFilesConfig
+from src.core.config import settings
 import os
 import mimetypes
 
