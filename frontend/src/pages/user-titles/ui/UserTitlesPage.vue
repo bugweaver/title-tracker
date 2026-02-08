@@ -16,6 +16,7 @@ const isLoading = ref(false);
 const activeTab = ref<TitleCategory>(TitleCategory.GAME);
 const activeStatus = ref<UserTitleStatus | 'all'>('all');
 const activeYear = ref<number | null>(null);
+const activeMonth = ref<number | null>(null);
 
 const fetchUser = async () => {
   try {
@@ -79,7 +80,7 @@ const getCountByStatus = (status: UserTitleStatus | 'all', category: TitleCatego
 
 const currentStatuses = computed(() => {
   const category = activeTab.value;
-  const statuses = [
+  let statuses = [
       'all',
       UserTitleStatus.COMPLETED,
       UserTitleStatus.PLAYING,
@@ -87,6 +88,11 @@ const currentStatuses = computed(() => {
       UserTitleStatus.PLANNED,
       UserTitleStatus.ON_HOLD,
   ] as const;
+
+  if (category === TitleCategory.MOVIE) {
+    // Exclude PLAYING (Watching) for movies
+    statuses = statuses.filter(s => s !== UserTitleStatus.PLAYING) as any;
+  }
 
   return statuses.map(status => ({
     id: status,
@@ -115,11 +121,31 @@ const yearOptions = computed(() => {
     ];
 });
 
+const monthOptions = computed(() => [
+    { value: null, label: 'Все месяцы' },
+    { value: 0, label: 'Январь' },
+    { value: 1, label: 'Февраль' },
+    { value: 2, label: 'Март' },
+    { value: 3, label: 'Апрель' },
+    { value: 4, label: 'Май' },
+    { value: 5, label: 'Июнь' },
+    { value: 6, label: 'Июль' },
+    { value: 7, label: 'Август' },
+    { value: 8, label: 'Сентябрь' },
+    { value: 9, label: 'Октябрь' },
+    { value: 10, label: 'Ноябрь' },
+    { value: 11, label: 'Декабрь' },
+]);
+
 const displayedTitles = computed(() => {
     let filtered = getTitlesByStatus(activeStatus.value, activeTab.value);
     
     if (activeYear.value !== null) {
         filtered = filtered.filter(t => t.finished_at && new Date(t.finished_at).getFullYear() === activeYear.value);
+    }
+    
+    if (activeMonth.value !== null) {
+        filtered = filtered.filter(t => t.finished_at && new Date(t.finished_at).getMonth() === activeMonth.value);
     }
     
     
@@ -137,6 +163,7 @@ const displayedTitles = computed(() => {
 watch(activeTab, () => {
   activeStatus.value = 'all';
   activeYear.value = null;
+  activeMonth.value = null;
 });
 </script>
 
@@ -206,14 +233,22 @@ watch(activeTab, () => {
           @click="activeStatus = status.id"
         >
           {{ status.label }}
+          <span class="ml-1.5 opacity-70 text-xs">{{ status.count }}</span>
         </button>
       </div>
 
-      <div v-if="availableYears.length > 0" class="w-48">
+      <div v-if="availableYears.length > 0" class="flex gap-2">
          <AppSelect
            v-model="activeYear"
            :options="yearOptions"
            placeholder="Все годы"
+           class="w-48"
+         />
+         <AppSelect
+           v-model="activeMonth"
+           :options="monthOptions"
+           placeholder="Все месяцы"
+           class="w-48"
          />
       </div>
     </div>
