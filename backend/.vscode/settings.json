@@ -1,0 +1,6 @@
+{
+  "python.analysis.autoImportCompletions": true,
+  "python.terminal.activateEnvironment": true,
+  "workbench.settings.openDefaultSettings": false,
+  "python.defaultInterpreterPath": "./venv/bin/python",
+}

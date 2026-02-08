@@ -1,0 +1,212 @@
+/* ==========================================
+   THEME SYSTEM
+   Use data-theme attribute on <html> to switch
+   ========================================== */
+
+@theme {
+    /* Primary brand color */
+    --color-primary-50: var(--theme-primary-50);
+    --color-primary-100: var(--theme-primary-100);
+    --color-primary-200: var(--theme-primary-200);
+    --color-primary-300: var(--theme-primary-300);
+    --color-primary-400: var(--theme-primary-400);
+    --color-primary-500: var(--theme-primary-500);
+    --color-primary-600: var(--theme-primary-600);
+    --color-primary-700: var(--theme-primary-700);
+    --color-primary-800: var(--theme-primary-800);
+    --color-primary-900: var(--theme-primary-900);
+
+    /* Semantic colors */
+    --color-background: var(--theme-bg);
+    --color-background-soft: var(--theme-bg-soft);
+    --color-background-mute: var(--theme-bg-mute);
+    --color-surface: var(--theme-surface);
+    --color-surface-hover: var(--theme-surface-hover);
+
+    --color-text: var(--theme-text);
+    --color-text-secondary: var(--theme-text-secondary);
+    --color-text-muted: var(--theme-text-muted);
+
+    --color-border: var(--theme-border);
+    --color-border-hover: var(--theme-border-hover);
+
+    --color-error: var(--theme-error);
+    --color-error-bg: var(--theme-error-bg);
+    --color-success: var(--theme-success);
+    --color-success-bg: var(--theme-success-bg);
+
+    /* Shadows */
+    --shadow-sm: var(--theme-shadow-sm);
+    --shadow-md: var(--theme-shadow-md);
+    --shadow-lg: var(--theme-shadow-lg);
+
+    /* Animations */
+    --animate-fade-in: fade-in 0.3s ease-out;
+    --animate-slide-up: slide-up 0.3s ease-out;
+
+    /* Border radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================
+   LIGHT THEME (default)
+   ========================================== */
+:root,
+[data-theme="light"] {
+    --theme-primary-50: #ecfdf5;
+    --theme-primary-100: #d1fae5;
+    --theme-primary-200: #a7f3d0;
+    --theme-primary-300: #6ee7b7;
+    --theme-primary-400: #34d399;
+    --theme-primary-500: #10b981;
+    --theme-primary-600: #059669;
+    --theme-primary-700: #047857;
+    --theme-primary-800: #065f46;
+    --theme-primary-900: #064e3b;
+
+    --theme-bg: #ffffff;
+    --theme-bg-soft: #f8f8f8;
+    --theme-bg-mute: #f2f2f2;
+    --theme-surface: #ffffff;
+    --theme-surface-hover: #f5f5f5;
+
+    --theme-text: #1a1a1a;
+    --theme-text-secondary: #4a4a4a;
+    --theme-text-muted: #9ca3af;
+
+    --theme-border: rgba(60, 60, 60, 0.12);
+    --theme-border-hover: rgba(60, 60, 60, 0.29);
+
+    --theme-error: #ef4444;
+    --theme-error-bg: rgba(239, 68, 68, 0.15);
+    --theme-success: #10b981;
+    --theme-success-bg: rgba(16, 185, 129, 0.15);
+
+    --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* ==========================================
+   DARK THEME
+   ========================================== */
+[data-theme="dark"] {
+    --theme-primary-50: #064e3b;
+    --theme-primary-100: #065f46;
+    --theme-primary-200: #047857;
+    --theme-primary-300: #059669;
+    --theme-primary-400: #10b981;
+    --theme-primary-500: #34d399;
+    --theme-primary-600: #6ee7b7;
+    --theme-primary-700: #a7f3d0;
+    --theme-primary-800: #d1fae5;
+    --theme-primary-900: #ecfdf5;
+
+    --theme-bg: #0a0a0a;
+    --theme-bg-soft: #141414;
+    --theme-bg-mute: #1a1a1a;
+    --theme-surface: #1e1e1e;
+    --theme-surface-hover: #2a2a2a;
+
+    --theme-text: #fafafa;
+    --theme-text-secondary: #a1a1aa;
+    --theme-text-muted: #71717a;
+
+    --theme-border: rgba(255, 255, 255, 0.1);
+    --theme-border-hover: rgba(255, 255, 255, 0.2);
+
+    --theme-error: #f87171;
+    --theme-error-bg: rgba(248, 113, 113, 0.15);
+    --theme-success: #34d399;
+    --theme-success-bg: rgba(52, 211, 153, 0.15);
+
+    --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================
+   MIDNIGHT THEME (example extra theme)
+   ========================================== */
+[data-theme="midnight"] {
+    --theme-primary-50: #312e81;
+    --theme-primary-100: #3730a3;
+    --theme-primary-200: #4338ca;
+    --theme-primary-300: #4f46e5;
+    --theme-primary-400: #6366f1;
+    --theme-primary-500: #818cf8;
+    --theme-primary-600: #a5b4fc;
+    --theme-primary-700: #c7d2fe;
+    --theme-primary-800: #e0e7ff;
+    --theme-primary-900: #eef2ff;
+
+    --theme-bg: #0f0f23;
+    --theme-bg-soft: #1a1a2e;
+    --theme-bg-mute: #16213e;
+    --theme-surface: #1f1f3a;
+    --theme-surface-hover: #2a2a4a;
+
+    --theme-text: #e0e0ff;
+    --theme-text-secondary: #a0a0cc;
+    --theme-text-muted: #6b6b99;
+
+    --theme-border: rgba(99, 102, 241, 0.2);
+    --theme-border-hover: rgba(99, 102, 241, 0.4);
+
+    --theme-error: #fb7185;
+    --theme-error-bg: rgba(251, 113, 133, 0.15);
+    --theme-success: #818cf8;
+    --theme-success-bg: rgba(129, 140, 248, 0.15);
+
+    --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+    --theme-shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.15);
+}
+
+/* ==========================================
+   BASE STYLES
+   ========================================== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+}
+
+body {
+    min-height: 100vh;
+    color: var(--color-text);
+    background: var(--color-background);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}

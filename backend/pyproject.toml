@@ -1,0 +1,17 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiohttp>=3.13.3",
+    "alembic>=1.18.3",
+    "asyncpg>=0.31.0",
+    "litestar[standard,cryptography,jwt,pydantic,redis,sqlalchemy]>=2.19.0",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic-settings>=2.12.0",
+    "python-jose>=3.5.0",
+    "ruff>=0.14.14",
+    "uvicorn>=0.40.0",
+]
