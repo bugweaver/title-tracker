@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import AppButton from '@/shared/ui/AppButton.vue';
+import AppSelect from '@/shared/ui/AppSelect.vue';
 import { type TitleSearchResult, titlesApi } from '@/shared/api/titles';
 import { UserTitleStatus } from '@/entities/title';
 
@@ -11,6 +12,7 @@ const props = defineProps<{
     status: UserTitleStatus;
     score: number | null;
     review_text: string | null;
+    finished_at?: string | null;
   } | null;
 }>();
 
@@ -22,6 +24,8 @@ const emit = defineEmits<{
 const rating = ref(0);
 const status = ref<UserTitleStatus>(UserTitleStatus.COMPLETED);
 const review = ref('');
+const selectedYear = ref<number | null>(null);
+const selectedMonth = ref<number | null>(null);
 const isSubmitting = ref(false);
 
 watch(() => props.isOpen, (isOpen) => {
@@ -30,11 +34,22 @@ watch(() => props.isOpen, (isOpen) => {
       status.value = props.initialData.status;
       rating.value = props.initialData.score || 0;
       review.value = props.initialData.review_text || '';
+      if (props.initialData.finished_at) {
+        const date = new Date(props.initialData.finished_at);
+        selectedYear.value = date.getFullYear();
+        selectedMonth.value = date.getMonth();
+      } else {
+        selectedYear.value = null;
+        selectedMonth.value = null;
+      }
     } else {
       // Reset
       status.value = UserTitleStatus.COMPLETED;
       rating.value = 0;
       review.value = '';
+      const now = new Date();
+      selectedYear.value = now.getFullYear();
+      selectedMonth.value = now.getMonth();
     }
   }
 });
@@ -59,10 +74,51 @@ const emoji = computed(() => {
   return '💩';
 });
 
+const monthOptions = [
+  { value: 0, label: 'Январь' },
+  { value: 1, label: 'Февраль' },
+  { value: 2, label: 'Март' },
+  { value: 3, label: 'Апрель' },
+  { value: 4, label: 'Май' },
+  { value: 5, label: 'Июнь' },
+  { value: 6, label: 'Июль' },
+  { value: 7, label: 'Август' },
+  { value: 8, label: 'Сентябрь' },
+  { value: 9, label: 'Октябрь' },
+  { value: 10, label: 'Ноябрь' },
+  { value: 11, label: 'Декабрь' },
+];
+
+const yearOptions = computed(() => {
+  const currentYear = new Date().getFullYear();
+  const startYear = 1980;
+  const years = [];
+  for (let y = currentYear; y >= startYear; y--) {
+    years.push({ value: y, label: String(y) });
+  }
+  return years;
+});
+
+const isSubmitDisabled = computed(() => {
+  if (isSubmitting.value) return true;
+  if (status.value === UserTitleStatus.PLANNED) return false;
+  return rating.value === 0;
+});
+
 const handleSubmit = async () => {
   if (!props.title) return;
   
   isSubmitting.value = true;
+  
+  let finishedAtIso: string | undefined = undefined;
+  if (status.value === UserTitleStatus.COMPLETED && selectedYear.value) {
+     const year = selectedYear.value;
+     const month = selectedMonth.value !== null ? selectedMonth.value : 0; // Default to Jan
+     // Create date at noon to avoid timezone shifting to previous day
+     const date = new Date(year, month, 1, 12, 0, 0); 
+     finishedAtIso = date.toISOString();
+  }
+
   try {
     await titlesApi.add({
       external_id: props.title.external_id,
@@ -74,6 +130,7 @@ const handleSubmit = async () => {
       status: status.value,
       score: status.value === UserTitleStatus.PLANNED ? undefined : (rating.value || undefined),
       review_text: review.value || undefined,
+      finished_at: finishedAtIso,
     });
     emit('added');
     emit('close');
@@ -148,6 +205,27 @@ const handleSubmit = async () => {
           </div>
         </div>
 
+        <!-- Date Input -->
+        <div v-if="status === UserTitleStatus.COMPLETED" class="space-y-2 pb-2">
+           <label class="text-sm font-medium text-zinc-400">Дата завершения</label>
+           <div class="flex gap-2">
+             <div class="w-1/2">
+               <AppSelect
+                 v-model="selectedMonth"
+                 :options="monthOptions"
+                 placeholder="Месяц"
+               />
+             </div>
+             <div class="w-1/2">
+               <AppSelect
+                 v-model="selectedYear"
+                 :options="yearOptions"
+                 placeholder="Год"
+               />
+             </div>
+           </div>
+        </div>
+
         <!-- Review -->
         <div class="space-y-2">
           <textarea 
@@ -165,7 +243,7 @@ const handleSubmit = async () => {
       <!-- Footer -->
       <div class="p-4 border-t border-zinc-800 flex justify-end gap-3 bg-zinc-900">
         <AppButton variant="ghost" @click="$emit('close')">Отмена</AppButton>
-        <AppButton :disabled="isSubmitting" :loading="isSubmitting" @click="handleSubmit">
+        <AppButton :disabled="isSubmitDisabled" :loading="isSubmitting" @click="handleSubmit">
           Добавить
         </AppButton>
       </div>

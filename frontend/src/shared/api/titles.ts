@@ -23,6 +23,7 @@ export interface AddUserTitleRequest {
   status: string;
   score?: number;
   review_text?: string;
+  finished_at?: string;
 }
 
 export const titlesApi = {

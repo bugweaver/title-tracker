@@ -48,6 +48,7 @@ const handleEditTitle = (userTitle: any) => {
     status: userTitle.status,
     score: userTitle.score,
     review_text: userTitle.review_text,
+    finished_at: userTitle.finished_at,
   };
   
   isReviewModalOpen.value = true;
@@ -154,7 +155,16 @@ const displayedTitles = computed(() => {
         });
     }
     
-    return titles;
+    
+    // Sort by finished_at desc, then by ID desc
+    return titles.sort((a, b) => {
+        const dateA = a.finished_at ? new Date(a.finished_at).getTime() : 0;
+        const dateB = b.finished_at ? new Date(b.finished_at).getTime() : 0;
+        if (dateA !== dateB) {
+            return dateB - dateA;
+        }
+        return b.id - a.id;
+    });
 });
 
 const selectedYear = ref<number | null>(null);
@@ -171,13 +181,17 @@ const availableYears = computed(() => {
 });
 
 const availableYearsOptions = computed(() => {
-    return availableYears.value.map(year => ({
-        value: year,
-        label: String(year)
-    }));
+    return [
+        { value: null, label: 'Все годы' },
+        ...availableYears.value.map(year => ({
+            value: year,
+            label: String(year)
+        }))
+    ];
 });
 
 const monthOptions = computed(() => [
+    { value: null, label: 'Все месяцы' },
     { value: 0, label: 'Январь' },
     { value: 1, label: 'Февраль' },
     { value: 2, label: 'Март' },
@@ -391,10 +405,4 @@ const activeSearchCategory = computed(() => {
     @save="handleAvatarSave"
   />
 
-  <AvatarCropModal
-    :is-open="isAvatarModalOpen"
-    :image-file="selectedAvatarFile"
-    @close="isAvatarModalOpen = false"
-    @save="handleAvatarSave"
-  />
 </template>

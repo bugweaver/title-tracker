@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { titlesApi } from '@/shared/api/titles';
 import { TitleCategory, UserTitleStatus, type UserTitle } from '@/entities/title';
 import UserGameCard from '@/features/games/ui/UserGameCard.vue';
+import AppSelect from '@/shared/ui/AppSelect.vue';
 import { usersApi, type User } from '@/shared/api';
 
 const route = useRoute();
@@ -14,6 +15,7 @@ const isLoading = ref(false);
 
 const activeTab = ref<TitleCategory>(TitleCategory.GAME);
 const activeStatus = ref<UserTitleStatus | 'all'>('all');
+const activeYear = ref<number | null>(null);
 
 const fetchUser = async () => {
   try {
@@ -54,7 +56,7 @@ const tabs = [
 const getStatusLabel = (status: UserTitleStatus | 'all', category: TitleCategory) => {
     if (status === 'all') return 'Все';
     if (status === UserTitleStatus.COMPLETED) return category === TitleCategory.GAME ? 'Прошел' : 'Посмотрел';
-    if (status === UserTitleStatus.PLAYING) return 'Играю';
+    if (status === UserTitleStatus.PLAYING) return category === TitleCategory.GAME ? 'Играю' : 'Смотрю';
     if (status === UserTitleStatus.WATCHING) return 'Смотрю';
     if (status === UserTitleStatus.DROPPED) return 'Дропнул';
     if (status === UserTitleStatus.PLANNED) return 'В планах';
@@ -80,7 +82,7 @@ const currentStatuses = computed(() => {
   const statuses = [
       'all',
       UserTitleStatus.COMPLETED,
-      category === TitleCategory.GAME ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING,
+      UserTitleStatus.PLAYING,
       UserTitleStatus.DROPPED,
       UserTitleStatus.PLANNED,
       UserTitleStatus.ON_HOLD,
@@ -93,12 +95,48 @@ const currentStatuses = computed(() => {
   }));
 });
 
+const availableYears = computed(() => {
+    const categoryTitles = titles.value.filter(t => t.title.category === activeTab.value);
+    const years = new Set<number>();
+    
+    categoryTitles.forEach(t => {
+        if (t.finished_at) {
+            years.add(new Date(t.finished_at).getFullYear());
+        }
+    });
+    
+    return Array.from(years).sort((a, b) => b - a);
+});
+
+const yearOptions = computed(() => {
+    return [
+        { value: null, label: 'Все годы' },
+        ...availableYears.value.map(y => ({ value: y, label: String(y) }))
+    ];
+});
+
 const displayedTitles = computed(() => {
-    return getTitlesByStatus(activeStatus.value, activeTab.value);
+    let filtered = getTitlesByStatus(activeStatus.value, activeTab.value);
+    
+    if (activeYear.value !== null) {
+        filtered = filtered.filter(t => t.finished_at && new Date(t.finished_at).getFullYear() === activeYear.value);
+    }
+    
+    
+    // Sort by finished_at desc, then by ID desc
+    return filtered.sort((a, b) => {
+        const dateA = a.finished_at ? new Date(a.finished_at).getTime() : 0;
+        const dateB = b.finished_at ? new Date(b.finished_at).getTime() : 0;
+        if (dateA !== dateB) {
+            return dateB - dateA;
+        }
+        return b.id - a.id;
+    });
 });
 
 watch(activeTab, () => {
   activeStatus.value = 'all';
+  activeYear.value = null;
 });
 </script>
 
@@ -168,8 +206,15 @@ watch(activeTab, () => {
           @click="activeStatus = status.id"
         >
           {{ status.label }}
-          <span class="ml-1.5 opacity-70 text-xs">{{ status.count }}</span>
         </button>
+      </div>
+
+      <div v-if="availableYears.length > 0" class="w-48">
+         <AppSelect
+           v-model="activeYear"
+           :options="yearOptions"
+           placeholder="Все годы"
+         />
       </div>
     </div>
 

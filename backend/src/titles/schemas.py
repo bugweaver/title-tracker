@@ -36,6 +36,7 @@ class UserTitleRead(UserTitleBase):
     title_id: int
     created_at: datetime
     updated_at: datetime
+    finished_at: datetime | None = None
     title: TitleRead
     
     model_config = ConfigDict(from_attributes=True)

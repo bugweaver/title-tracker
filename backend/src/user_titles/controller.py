@@ -70,7 +70,8 @@ class UserTitlesController(Controller):
             user_title.review_text = data.review_text
             
             if data.finished_at:
-                user_title.finished_at = data.finished_at
+                # Ensure naive datetime if coming from aware source
+                user_title.finished_at = data.finished_at.replace(tzinfo=None)
             elif data.status == UserTitleStatus.COMPLETED and not user_title.finished_at:
                 user_title.finished_at = datetime.now()
             elif data.status != UserTitleStatus.COMPLETED:
@@ -78,6 +79,9 @@ class UserTitlesController(Controller):
         else:
             # Create new link
             finished_at = data.finished_at
+            if finished_at:
+                finished_at = finished_at.replace(tzinfo=None)
+            
             if not finished_at and data.status == UserTitleStatus.COMPLETED:
                 finished_at = datetime.now()
 

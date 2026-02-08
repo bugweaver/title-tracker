@@ -43,7 +43,7 @@ const statusLabel = computed(() => {
     const s = props.userTitle.status;
     const cat = props.userTitle.title.category;
     if (s === 'completed') return cat === 'game' ? 'Прошел' : 'Посмотрел';
-    if (s === 'playing') return 'Играю';
+    if (s === 'playing') return cat === 'game' ? 'Играю' : 'Смотрю';
     if (s === 'watching') return 'Смотрю';
     if (s === 'dropped') return 'Дропнул';
     if (s === 'planned') return 'В планах';
