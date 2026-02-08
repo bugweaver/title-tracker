@@ -19,6 +19,8 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/title-tracker/frontend:latest
     container_name: title_tracker_frontend
     restart: always
+    environment:
+      - VITE_DISABLE_DEVTOOLS=true
     networks:
       - tt_network
 

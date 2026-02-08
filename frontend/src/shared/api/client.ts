@@ -95,13 +95,20 @@ class ApiClient {
 
     if (!response.ok) {
       // Handle 401 - try to refresh token
-      if (response.status === 401 && retry && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register') && !endpoint.includes('/auth/refresh')) {
-        try {
-          await this.handleTokenRefresh();
-          // Retry the original request with new token
-          return this.request<T>(endpoint, options, false);
-        } catch {
-          // Refresh failed, throw original error
+      // Handle 401 - try to refresh token
+      if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register') && !endpoint.includes('/auth/refresh')) {
+        if (retry) {
+          try {
+            await this.handleTokenRefresh();
+            // Retry the original request with new token
+            return this.request<T>(endpoint, options, false);
+          } catch {
+            // Refresh failed
+            if (this.onUnauthorized) this.onUnauthorized();
+          }
+        } else {
+          // Already retried or retry disabled
+          if (this.onUnauthorized) this.onUnauthorized();
         }
       }
 
@@ -181,6 +188,12 @@ class ApiClient {
       headers: { 'Content-Type': 'application/json' },
       body: data ? JSON.stringify(data) : undefined,
     });
+  }
+
+  private onUnauthorized: (() => void) | null = null;
+  
+  public setUnauthorizedHandler(handler: () => void) {
+    this.onUnauthorized = handler;
   }
 
   async delete<T>(endpoint: string): Promise<T> {
