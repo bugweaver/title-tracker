@@ -104,28 +104,28 @@ const getTitleLabel = computed(() => {
           :class="activeTab === 'game' ? 'border-primary-500 text-white' : 'border-transparent text-zinc-400 hover:text-white'"
           @click="activeTab = 'game'"
         >
-          Games
+          Игры
         </button>
         <button 
           class="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
           :class="activeTab === 'movie' ? 'border-primary-500 text-white' : 'border-transparent text-zinc-400 hover:text-white'"
           @click="activeTab = 'movie'"
         >
-          Movies
+          Фильмы
         </button>
         <button 
           class="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
           :class="activeTab === 'tv' ? 'border-primary-500 text-white' : 'border-transparent text-zinc-400 hover:text-white'"
           @click="activeTab = 'tv'"
         >
-          TV Shows
+          Сериалы
         </button>
         <button 
           class="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
           :class="activeTab === 'anime' ? 'border-primary-500 text-white' : 'border-transparent text-zinc-400 hover:text-white'"
           @click="activeTab = 'anime'"
         >
-          Anime
+          Аниме
         </button>
       </div>
 
