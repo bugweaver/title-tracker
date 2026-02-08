@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { apiClient } from '@/shared/api';
-import { apiClient } from '@/shared/api';
+
 
 interface User {
   id: number;
