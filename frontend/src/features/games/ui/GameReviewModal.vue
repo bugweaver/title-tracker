@@ -56,10 +56,12 @@ watch(() => props.isOpen, (isOpen) => {
 
 const statuses = computed(() => {
   const isGame = props.title?.type === 'game';
+  const isMovie = props.title?.type === 'movie';
   
   return [
     { id: UserTitleStatus.COMPLETED, label: isGame ? 'Прошел' : 'Посмотрел' },
-    { id: UserTitleStatus.PLAYING, label: isGame ? 'Играю' : 'Смотрю' },
+    // Exclude Playing/Watching for movies
+    ...(!isMovie ? [{ id: UserTitleStatus.PLAYING, label: isGame ? 'Играю' : 'Смотрю' }] : []),
     { id: UserTitleStatus.DROPPED, label: 'Дропнул' },
     { id: UserTitleStatus.PLANNED, label: 'В планах' },
     { id: UserTitleStatus.ON_HOLD, label: 'На паузе' },
