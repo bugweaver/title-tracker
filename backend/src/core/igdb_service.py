@@ -83,7 +83,32 @@ class IGDBService(ContentProvider):
                 logger.error(f"Failed to search games on IGDB: {e}")
                 # Return empty list on error to gracefully handle failures? 
                 # Or raise? Letting it raise for now so controller can handle or 500.
+                # Or raise? Letting it raise for now so controller can handle or 500.
                 raise
+
+    async def get_game_details(self, external_id: str) -> Optional[Dict[str, Any]]:
+        """Get details for a specific game by ID."""
+        token = await self._get_token()
+        headers = {
+            "Client-ID": self.client_id,
+            "Authorization": f"Bearer {token}",
+        }
+        body = f'fields name, cover.url, first_release_date, genres.name; where id = {external_id};'
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    f"{self.base_url}/games",
+                    headers=headers,
+                    content=body
+                )
+                response.raise_for_status()
+                games = response.json()
+                processed = self._process_games(games)
+                return processed[0] if processed else None
+            except httpx.HTTPError as e:
+                logger.error(f"Failed to get game details from IGDB: {e}")
+                return None
 
     def _process_games(self, games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Process API response to format data for frontend."""
@@ -134,6 +159,21 @@ class IGDBService(ContentProvider):
             )
             for g in games
         ]
+
+    async def get_details(self, external_id: str) -> Optional[ContentDTO]:
+        game = await self.get_game_details(external_id)
+        if not game:
+            return None
+            
+        return ContentDTO(
+            external_id=str(game["id"]),
+            title=game["name"],
+            original_title=game["name"],
+            poster_url=game.get("cover_url"),
+            release_year=game.get("release_year"),
+            type="game",
+            genres=game.get("genres", [])
+        )
 
 igdb_service = IGDBService()
 

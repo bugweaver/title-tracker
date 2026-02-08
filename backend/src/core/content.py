@@ -16,3 +16,7 @@ class ContentProvider(ABC):
     @abstractmethod
     async def search(self, query: str) -> List[ContentDTO]:
         pass
+
+    @abstractmethod
+    async def get_details(self, external_id: str) -> Optional[ContentDTO]:
+        pass
