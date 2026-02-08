@@ -142,7 +142,8 @@ const currentStatuses = computed(() => {
 
 // Filtered list of titles to display
 const displayedTitles = computed(() => {
-    let titles = titleStore.getTitlesByStatus(activeStatus.value, activeTab.value);
+    // Create a copy to avoid mutating the store
+    let titles = [...titleStore.getTitlesByStatus(activeStatus.value, activeTab.value)];
     
     if (selectedYear.value) {
         titles = titles.filter(t => {
@@ -159,12 +160,16 @@ const displayedTitles = computed(() => {
     }
     
     
-    // Sort by finished_at desc, then by ID desc
+    // Sort by finished_at (Month/Year) desc, then by ID desc
     return titles.sort((a, b) => {
-        const dateA = a.finished_at ? new Date(a.finished_at).getTime() : 0;
-        const dateB = b.finished_at ? new Date(b.finished_at).getTime() : 0;
-        if (dateA !== dateB) {
-            return dateB - dateA;
+        const dateA = a.finished_at ? new Date(a.finished_at) : null;
+        const dateB = b.finished_at ? new Date(b.finished_at) : null;
+
+        const timeA = dateA ? dateA.getFullYear() * 100 + dateA.getMonth() : 0;
+        const timeB = dateB ? dateB.getFullYear() * 100 + dateB.getMonth() : 0;
+
+        if (timeA !== timeB) {
+            return timeB - timeA;
         }
         return b.id - a.id;
     });

@@ -20,6 +20,7 @@ interface UserTitle {
   score: number | null;
   review_text: string | null;
   title: Title;
+  finished_at?: string | null;
 }
 
 const props = withDefaults(defineProps<{
