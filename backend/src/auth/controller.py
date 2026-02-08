@@ -63,25 +63,17 @@ class AuthController(Controller):
         data: Annotated[UserLogin, Body(media_type=RequestEncodingType.URL_ENCODED)],
         auth_service: AuthService,
     ) -> Response[AccessTokenResponse]:
-        import traceback
-        import sys
-        try:
-            tokens = await auth_service.login_user(data)
-            
-            response_data = AccessTokenResponse(
-                access_token=tokens.access_token,
-                token_type=tokens.token_type,
-            )
-            
-            response = Response(content=response_data)
-            set_refresh_cookie(response, tokens.refresh_token)
-            
-            return response
-        except Exception:
-            print("ERROR IN LOGIN ENDPOINT:", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
-            sys.stderr.flush()
-            raise
+        tokens = await auth_service.login_user(data)
+        
+        response_data = AccessTokenResponse(
+            access_token=tokens.access_token,
+            token_type=tokens.token_type,
+        )
+        
+        response = Response(content=response_data)
+        set_refresh_cookie(response, tokens.refresh_token)
+        
+        return response
 
     @post("/refresh")
     async def refresh(

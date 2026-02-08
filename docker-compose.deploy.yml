@@ -14,6 +14,7 @@ services:
       - PYTHONUNBUFFERED=1
       - POSTGRES_HOST=db
       - REDIS_HOST=redis
+      - REDIS_PASSWORD=
       - LOG_LEVEL=debug
       - RUN__DEBUG=true
     depends_on:
