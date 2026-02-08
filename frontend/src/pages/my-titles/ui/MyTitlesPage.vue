@@ -124,8 +124,10 @@ const currentStatuses = computed(() => {
   const statuses = [
       'all',
       UserTitleStatus.COMPLETED,
-      // "Playing" for games, "Watching" for others
-      category === TitleCategory.GAME ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING,
+      // "Playing" for games, "Watching" for others. Exclude for Movies.
+      ...(category !== TitleCategory.MOVIE 
+          ? [category === TitleCategory.GAME ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING] 
+          : []),
       UserTitleStatus.DROPPED,
       UserTitleStatus.PLANNED,
       UserTitleStatus.ON_HOLD,
