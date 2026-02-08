@@ -80,18 +80,18 @@ const getCountByStatus = (status: UserTitleStatus | 'all', category: TitleCatego
 
 const currentStatuses = computed(() => {
   const category = activeTab.value;
-  let statuses = [
+  let statuses: (UserTitleStatus | 'all')[] = [
       'all',
       UserTitleStatus.COMPLETED,
       UserTitleStatus.PLAYING,
       UserTitleStatus.DROPPED,
       UserTitleStatus.PLANNED,
       UserTitleStatus.ON_HOLD,
-  ] as const;
+  ];
 
   if (category === TitleCategory.MOVIE) {
     // Exclude PLAYING (Watching) for movies
-    statuses = statuses.filter(s => s !== UserTitleStatus.PLAYING) as any;
+    statuses = statuses.filter(s => s !== UserTitleStatus.PLAYING);
   }
 
   return statuses.map(status => ({
