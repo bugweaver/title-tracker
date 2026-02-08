@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from core.models.title import Title, UserTitle, TitleCategory
+from core.models.title import Title, UserTitle
 from core.models.db_helper import get_db_session
 from core.models import User
 

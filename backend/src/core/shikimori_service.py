@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List
 
 import httpx
 from core.content import ContentProvider, ContentDTO

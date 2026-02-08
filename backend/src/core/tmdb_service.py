@@ -1,5 +1,5 @@
 import logging
-from typing import List, Literal, Optional
+from typing import List, Literal
 
 import httpx
 from core.config import settings

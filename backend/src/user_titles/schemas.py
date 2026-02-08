@@ -1,10 +1,10 @@
-from typing import Literal, Any
+from typing import Literal
 from datetime import datetime
 
 
 from pydantic import BaseModel, Field
 
-from core.models.title import UserTitleStatus, TitleCategory
+from core.models.title import UserTitleStatus
 
 
 class AddUserTitleRequest(BaseModel):

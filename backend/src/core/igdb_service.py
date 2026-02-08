@@ -18,7 +18,8 @@ class IGDBService(ContentProvider):
             logger.warning(f"Twitch Client ID or Secret is missing! CWD: {os.getcwd()}")
             try: 
                 logger.warning(f"Files in CWD: {os.listdir(os.getcwd())}")
-            except: pass
+            except Exception:
+                pass
             logger.warning("Twitch Client ID or Secret is missing in settings!")
 
         self.access_token: Optional[str] = None

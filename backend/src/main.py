@@ -7,13 +7,9 @@ from user_titles.controller import UserTitlesController
 from users.controller import UsersController
 from backup.controller import BackupController
 from auth.jwt import jwt_config
-from core.config import settings
-from core.models.db_helper import db_helper
-from core.redis import client  # Чтобы инициализировать если нужно
-from litestar import Litestar, Router
-from litestar.config.cors import CORSConfig
-from litestar.di import Provide
 import os
+import mimetypes
+from litestar.static_files import StaticFilesConfig
 import mimetypes
 
 # Ensure mime types are loaded
@@ -42,7 +38,6 @@ api_router = Router(path="/api/v1", route_handlers=[
     BackupController,
 ])
 
-from litestar.static_files import StaticFilesConfig
 
 # ... (imports)
 

@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 from typing import Optional, List
-from core.models.title import TitleCategory, UserTitleStatus
+from core.models.title import UserTitleStatus
 
 class BackupItem(BaseModel):
     # Title Data

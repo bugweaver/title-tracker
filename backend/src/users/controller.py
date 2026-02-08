@@ -74,7 +74,6 @@ class UsersController(Controller):
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> UserRead:
         """Upload user avatar."""
-        import shutil
         import os
         from uuid import uuid4
         

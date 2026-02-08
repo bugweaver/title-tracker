@@ -12,7 +12,7 @@ from src.auth.service import AuthService
 from src.auth.schemas import UserRegister, UserLogin, AccessTokenResponse, UserResponse
 from src.core.config import settings
 
-from core.models.db_helper import db_helper, get_db_session
+from core.models.db_helper import get_db_session
 from src.core.models import User
 
 

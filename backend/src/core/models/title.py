@@ -1,5 +1,6 @@
 from datetime import datetime
-from enum import Enum, auto
+from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String, UniqueConstraint, func, Float, Text
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -7,6 +8,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .mixins import IntIdPkMixin
+
+if TYPE_CHECKING:
+    from .user import User
 
 
 class TitleCategory(str, Enum):
