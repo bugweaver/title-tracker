@@ -15,6 +15,7 @@ export const useTitleStore = defineStore('title', () => {
     try {
       const response = await apiClient.get<UserTitle[]>('/titles/my');
       titles.value = response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       error.value = e.message || 'Failed to fetch titles';
     } finally {

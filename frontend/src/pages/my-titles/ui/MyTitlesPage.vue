@@ -2,7 +2,7 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import { useUserStore } from '@/entities/user';
 import { useTitleStore, TitleCategory, UserTitleStatus } from '@/entities/title';
-import { type TitleSearchResult, usersApi, type User } from '@/shared/api';
+import { type TitleSearchResult, usersApi } from '@/shared/api';
 import { AppSelect } from '@/shared/ui';
 import GameSearchModal from '@/features/games/ui/GameSearchModal.vue';
 import GameReviewModal from '@/features/games/ui/GameReviewModal.vue';
@@ -32,6 +32,7 @@ const selectedInitialData = ref<{
   review_text: string | null;
 } | null>(null);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handleEditTitle = (userTitle: any) => {
   // Map UserTitle to TitleSearchResult
   selectedTitle.value = {

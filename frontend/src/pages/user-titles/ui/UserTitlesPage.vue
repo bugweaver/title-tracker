@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import { titlesApi } from '@/shared/api/titles';
 import { TitleCategory, UserTitleStatus, type UserTitle } from '@/entities/title';
 import UserGameCard from '@/features/games/ui/UserGameCard.vue';
-import { apiClient, usersApi, type User } from '@/shared/api';
+import { usersApi, type User } from '@/shared/api';
 
 const route = useRoute();
 const userId = computed(() => Number(route.params.id));

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { apiClient } from '@/shared/api';
-import AppInput from '@/shared/ui/AppInput.vue';
+import { apiClient } from '@/shared/api';
 
 interface User {
   id: number;
@@ -15,8 +15,10 @@ const isLoading = ref(false);
 const searchQuery = ref('');
 
 // Debounce helper
+// eslint-disable-next-line @typescript-eslint/ab_unsafe-function-type
 const debounce = (fn: Function, ms = 300) => {
   let timeoutId: ReturnType<typeof setTimeout>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return function (this: any, ...args: any[]) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn.apply(this, args), ms);
@@ -37,6 +39,7 @@ const fetchUsers = async () => {
     // Since apiClient.get usually takes endpoint, let's append params
     const queryString = params.toString() ? `?${params.toString()}` : '';
     // Fix: verify endpoint returns array or object with items
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await apiClient.get<any>(`/users/${queryString}`);
     // If response is array, use it. If pagination object, use items.
     users.value = Array.isArray(response) ? response : (response.items || []);
@@ -57,10 +60,7 @@ onMounted(() => {
   fetchUsers();
 });
 
-const getInitials = (user: User) => {
-    if (user.avatar_url) return '';
-    return user.login.substring(0, 1).toUpperCase();
-}
+
 </script>
 
 <template>

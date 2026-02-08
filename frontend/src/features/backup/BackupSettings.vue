@@ -65,6 +65,7 @@ const handleImport = async (file: File) => {
         
         const count = response.processed_count;
         importSuccess.value = `Успешно импортировано ${count} тайтлов`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         console.error('Import failed:', error);
         importError.value = error.response?.data?.message || 'Ошибка при импорте';

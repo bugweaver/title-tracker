@@ -29,7 +29,7 @@ const props = withDefaults(defineProps<{
   editable: false
 });
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'edit', userTitle: UserTitle): void;
 }>();
 

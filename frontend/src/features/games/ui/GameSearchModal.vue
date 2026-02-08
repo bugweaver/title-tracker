@@ -16,7 +16,7 @@ const emit = defineEmits<{
   (e: 'select', title: TitleSearchResult): void;
 }>();
 
-const { theme } = useTheme();
+useTheme();
 const searchQuery = ref('');
 const results = ref<TitleSearchResult[]>([]);
 const isLoading = ref(false);

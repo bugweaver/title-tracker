@@ -15,6 +15,7 @@ const emit = defineEmits<{
 }>();
 
 const imageUrl = ref<string | null>(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const cropper = ref<any>(null);
 
 watch(() => props.imageFile, (file) => {
