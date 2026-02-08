@@ -22,7 +22,13 @@ mimetypes.add_type("image/png", ".png")
 
 # CORS configuration for development
 cors_config = CORSConfig(
-    allow_origins=["http://localhost", "http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://titletracker.site",
+        "https://www.titletracker.site",
+    ],
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
     allow_credentials=True,

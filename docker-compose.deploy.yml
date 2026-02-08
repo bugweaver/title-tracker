@@ -21,6 +21,7 @@ services:
     restart: always
     environment:
       - VITE_DISABLE_DEVTOOLS=true
+      - VITE_API_URL=/api/v1
     networks:
       - tt_network
 
