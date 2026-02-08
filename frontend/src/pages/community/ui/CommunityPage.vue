@@ -15,7 +15,7 @@ const isLoading = ref(false);
 const searchQuery = ref('');
 
 // Debounce helper
-// eslint-disable-next-line @typescript-eslint/ab_unsafe-function-type
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 const debounce = (fn: Function, ms = 300) => {
   let timeoutId: ReturnType<typeof setTimeout>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
