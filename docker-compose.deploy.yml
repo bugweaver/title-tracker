@@ -13,6 +13,7 @@ services:
       - POSTGRES_HOST=db
       - REDIS_HOST=redis
       - LOG_LEVEL=debug
+      - RUN__DEBUG=true
     depends_on:
       db:
         condition: service_healthy

@@ -12,6 +12,7 @@ LOG_DEFAULT_FORMAT = (
 class RunConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8000
+    debug: bool = False
 
 
 class LoggingConfig(BaseModel):

@@ -51,6 +51,7 @@ api_router = Router(path="/api/v1", route_handlers=[
 
 app = Litestar(
     route_handlers=[api_router],
+    debug=settings.run.debug,
     on_app_init=[jwt_config.on_app_init],
     on_shutdown=[db_helper.dispose],
     cors_config=cors_config,
