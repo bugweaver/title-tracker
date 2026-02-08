@@ -1,14 +1,6 @@
 
 import asyncio
-import sys
-from pathlib import Path
-
-# Add src to python path to allow imports
-current_dir = Path(__file__).resolve().parent
-src_dir = current_dir.parent.parent # Adjusted path: backend/src
-sys.path.append(str(src_dir / 'src'))
-
-from sqlalchemy import select, update
+from sqlalchemy import select
 from core.models.db_helper import db_helper
 from core.models.title import Title, TitleCategory
 from core.igdb_service import igdb_service
