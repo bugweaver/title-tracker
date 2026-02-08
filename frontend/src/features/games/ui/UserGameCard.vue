@@ -63,7 +63,7 @@ const statusColorClass = computed(() => {
 
 const isExpanded = ref(false);
 const shouldShowReadMore = computed(() => {
-    return (props.userTitle.review_text?.length || 0) > 150;
+    return (props.userTitle.review_text?.length || 0) > 300;
 });
 </script>
 
