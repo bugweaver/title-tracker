@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { apiClient } from '@/shared/api';
 import type { UserTitle } from './types';
 import { TitleCategory, UserTitleStatus } from './types';
