@@ -43,3 +43,24 @@ shell-db:
 # Create two default users (bugweaver, alice)
 create-users:
 	docker-compose $(COMPOSE_DEV) exec backend python src/scripts/create_users.py
+
+# --- CI/CD & Local Development Helpers ---
+
+# Install dependencies locally
+install:
+	cd backend && uv sync
+	cd frontend && bun install
+
+# Run linters
+lint:
+	cd backend && uv run ruff check .
+	cd frontend && bun run lint
+
+# Run formatters
+format:
+	cd backend && uv run ruff format .
+	cd frontend && bun run format
+
+# Run tests (currently only frontend type-check as backend has no tests)
+test:
+	cd frontend && bun run type-check
