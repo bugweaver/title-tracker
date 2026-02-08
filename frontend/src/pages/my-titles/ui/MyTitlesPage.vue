@@ -30,6 +30,7 @@ const selectedInitialData = ref<{
   status: UserTitleStatus;
   score: number | null;
   review_text: string | null;
+  finished_at?: string | null;
 } | null>(null);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
