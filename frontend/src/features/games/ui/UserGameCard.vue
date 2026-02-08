@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { type UserTitleStatus } from '@/entities/title';
 import { TitleCategory } from '@/entities/title';
 
@@ -59,6 +59,11 @@ const statusColorClass = computed(() => {
     if (s === 'planned') return 'bg-slate-100 text-slate-700';
     if (s === 'dropped') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-700';
+});
+
+const isExpanded = ref(false);
+const shouldShowReadMore = computed(() => {
+    return (props.userTitle.review_text?.length || 0) > 150;
 });
 </script>
 
@@ -124,9 +129,19 @@ const statusColorClass = computed(() => {
       </div>
 
       <!-- Review -->
-      <p v-if="userTitle.review_text" class="text-sm text-[var(--color-text-secondary)] line-clamp-3 leading-relaxed opacity-90 max-w-2xl">
-        {{ userTitle.review_text }}
-      </p>
+      <!-- Review -->
+      <div v-if="userTitle.review_text" class="text-sm text-[var(--color-text-secondary)] max-w-2xl">
+        <p :class="{ 'line-clamp-3': !isExpanded }" class="leading-relaxed opacity-90 transition-all duration-300 break-words">
+          {{ userTitle.review_text }}
+        </p>
+        <button 
+          v-if="shouldShowReadMore" 
+          @click.stop="isExpanded = !isExpanded" 
+          class="text-primary-500 hover:text-primary-600 hover:underline text-xs mt-1 font-medium cursor-pointer"
+        >
+          {{ isExpanded ? 'Свернуть' : 'Читать далее' }}
+        </button>
+      </div>
       <p v-else class="text-sm text-[var(--color-text-tertiary)] italic">
         Нет отзыва
       </p>
