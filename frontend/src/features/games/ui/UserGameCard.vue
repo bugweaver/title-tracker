@@ -143,9 +143,9 @@ const shouldShowReadMore = computed(() => {
           {{ isExpanded ? 'Свернуть' : 'Читать далее' }}
         </button>
       </div>
-      <p v-else class="text-sm text-[var(--color-text-tertiary)] italic">
+      <!-- <p v-else class="text-sm text-[var(--color-text-tertiary)] italic">
         Нет отзыва
-      </p>
+      </p> -->
 
     </div>
   </div>
