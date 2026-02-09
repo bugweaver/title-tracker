@@ -101,11 +101,11 @@ const yearOptions = computed(() => {
   return years;
 });
 
-const isSubmitDisabled = computed(() => {
-  if (isSubmitting.value) return true;
-  if (status.value === UserTitleStatus.PLANNED) return false;
-  return rating.value === 0;
-});
+// const isSubmitDisabled = computed(() => {
+//   if (isSubmitting.value) return true;
+//   if (status.value === UserTitleStatus.PLANNED) return false;
+//   return rating.value === 0;
+// });
 
 const handleSubmit = async () => {
   if (!props.title) return;
@@ -245,7 +245,7 @@ const handleSubmit = async () => {
       <!-- Footer -->
       <div class="p-4 border-t border-zinc-800 flex justify-end gap-3 bg-zinc-900">
         <AppButton variant="ghost" @click="$emit('close')">Отмена</AppButton>
-        <AppButton :disabled="isSubmitDisabled" :loading="isSubmitting" @click="handleSubmit">
+        <AppButton :loading="isSubmitting" @click="handleSubmit">
           Добавить
         </AppButton>
       </div>
