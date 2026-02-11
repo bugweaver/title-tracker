@@ -27,6 +27,10 @@ export const useTitleStore = defineStore('title', () => {
     return titles.value.filter((t) => t.title.category === category);
   };
 
+  // "Playing" and "Watching" are equivalent for non-game categories (both mean "Смотрю")
+  const isWatchingGroup = (s: UserTitleStatus) =>
+    s === UserTitleStatus.PLAYING || s === UserTitleStatus.WATCHING;
+
   const getTitlesByStatus = (status: UserTitleStatus | 'all', category?: TitleCategory) => {
     let filtered = titles.value;
     
@@ -36,6 +40,11 @@ export const useTitleStore = defineStore('title', () => {
     
     if (status === 'all') {
       return filtered;
+    }
+
+    // For non-game categories, match both "playing" and "watching"
+    if (category && category !== TitleCategory.GAME && isWatchingGroup(status)) {
+      return filtered.filter((t) => isWatchingGroup(t.status));
     }
     
     return filtered.filter((t) => t.status === status);
