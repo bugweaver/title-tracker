@@ -83,16 +83,11 @@ const currentStatuses = computed(() => {
   let statuses: (UserTitleStatus | 'all')[] = [
       'all',
       UserTitleStatus.COMPLETED,
-      UserTitleStatus.PLAYING,
+      category === TitleCategory.GAME ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING,
       UserTitleStatus.DROPPED,
       UserTitleStatus.PLANNED,
       UserTitleStatus.ON_HOLD,
   ];
-
-  if (category === TitleCategory.MOVIE) {
-    // Exclude PLAYING (Watching) for movies
-    statuses = statuses.filter(s => s !== UserTitleStatus.PLAYING);
-  }
 
   return statuses.map(status => ({
     id: status,
