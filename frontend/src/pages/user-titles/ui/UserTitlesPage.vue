@@ -65,11 +65,21 @@ const getStatusLabel = (status: UserTitleStatus | 'all', category: TitleCategory
     return status;
 };
 
+// "Playing" and "Watching" are equivalent for non-game categories (both mean "Смотрю").
+// Data may have either value depending on how it was added.
+const isWatchingGroup = (s: UserTitleStatus) =>
+    s === UserTitleStatus.PLAYING || s === UserTitleStatus.WATCHING;
+
 // Filter logic (similar to store but local)
 const getTitlesByStatus = (status: UserTitleStatus | 'all', category: TitleCategory) => {
     let filtered = titles.value.filter(t => t.title.category === category);
     if (status !== 'all') {
-        filtered = filtered.filter(t => t.status === status);
+        if (category !== TitleCategory.GAME && isWatchingGroup(status)) {
+            // Match both "playing" and "watching" for non-game categories
+            filtered = filtered.filter(t => isWatchingGroup(t.status));
+        } else {
+            filtered = filtered.filter(t => t.status === status);
+        }
     }
     return filtered;
 };
@@ -80,10 +90,12 @@ const getCountByStatus = (status: UserTitleStatus | 'all', category: TitleCatego
 
 const currentStatuses = computed(() => {
   const category = activeTab.value;
-  let statuses: (UserTitleStatus | 'all')[] = [
+  const statuses: (UserTitleStatus | 'all')[] = [
       'all',
       UserTitleStatus.COMPLETED,
-      category === TitleCategory.GAME ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING,
+      ...(category !== TitleCategory.MOVIE
+        ? [category === TitleCategory.GAME ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING]
+        : []),
       UserTitleStatus.DROPPED,
       UserTitleStatus.PLANNED,
       UserTitleStatus.ON_HOLD,

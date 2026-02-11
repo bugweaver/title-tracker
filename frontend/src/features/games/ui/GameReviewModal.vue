@@ -60,8 +60,8 @@ const statuses = computed(() => {
   
   return [
     { id: UserTitleStatus.COMPLETED, label: isGame ? 'Прошел' : 'Посмотрел' },
-    // Exclude Playing/Watching for movies
-    ...(!isMovie ? [{ id: UserTitleStatus.PLAYING, label: isGame ? 'Играю' : 'Смотрю' }] : []),
+    // Use PLAYING for games, WATCHING for series/anime, exclude for movies
+    ...(!isMovie ? [{ id: isGame ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING, label: isGame ? 'Играю' : 'Смотрю' }] : []),
     { id: UserTitleStatus.DROPPED, label: 'Дропнул' },
     { id: UserTitleStatus.PLANNED, label: 'В планах' },
     { id: UserTitleStatus.ON_HOLD, label: 'На паузе' },
