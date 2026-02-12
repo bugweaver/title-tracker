@@ -20,6 +20,7 @@ class AddUserTitleRequest(BaseModel):
     status: UserTitleStatus
     score: float | None = Field(None, ge=1, le=10)
     review_text: str | None = None
+    is_spoiler: bool = False
     finished_at: datetime | None = None
 
     # review_text: str | None = None # We don't have review table yet, maybe just store it if we had a place, or ignore for now/add later. 
@@ -39,4 +40,5 @@ class UserTitleRead(BaseModel):
     title_id: int
     status: UserTitleStatus
     score: float | None
+    is_spoiler: bool
     finished_at: datetime | None

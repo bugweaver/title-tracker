@@ -23,6 +23,7 @@ export interface AddUserTitleRequest {
   status: string;
   score?: number;
   review_text?: string;
+  is_spoiler?: boolean;
   finished_at?: string;
 }
 

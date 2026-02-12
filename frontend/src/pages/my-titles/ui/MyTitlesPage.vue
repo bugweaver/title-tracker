@@ -30,6 +30,7 @@ const selectedInitialData = ref<{
   status: UserTitleStatus;
   score: number | null;
   review_text: string | null;
+  is_spoiler?: boolean;
   finished_at?: string | null;
 } | null>(null);
 
@@ -49,6 +50,7 @@ const handleEditTitle = (userTitle: any) => {
     status: userTitle.status,
     score: userTitle.score,
     review_text: userTitle.review_text,
+    is_spoiler: userTitle.is_spoiler,
     finished_at: userTitle.finished_at,
   };
   

@@ -48,6 +48,7 @@ class UserTitle(IntIdPkMixin, Base):
     status: Mapped[UserTitleStatus] = mapped_column(nullable=False, default=UserTitleStatus.PLANNED)
     score: Mapped[float | None] = mapped_column(Float)  # 1.0-10.0
     review_text: Mapped[str | None] = mapped_column(Text)
+    is_spoiler: Mapped[bool] = mapped_column(default=False, server_default="false")
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

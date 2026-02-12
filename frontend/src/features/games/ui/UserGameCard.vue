@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { type UserTitleStatus } from '@/entities/title';
 import { TitleCategory } from '@/entities/title';
 
@@ -19,6 +19,7 @@ interface UserTitle {
   status: UserTitleStatus;
   score: number | null;
   review_text: string | null;
+  is_spoiler?: boolean;
   title: Title;
   finished_at?: string | null;
 }
@@ -62,10 +63,53 @@ const statusColorClass = computed(() => {
     return 'bg-gray-100 text-gray-700';
 });
 
+const isRevealed = ref(false);
 const isExpanded = ref(false);
 const shouldShowReadMore = computed(() => {
     return (props.userTitle.review_text?.length || 0) > 300;
 });
+
+interface ParsedSegment {
+    id: number;
+    text: string;
+    isSpoiler: boolean;
+    isRevealed: boolean;
+}
+
+const parsedReview = ref<ParsedSegment[]>([]);
+
+// Re-parse when review text changes
+watch(() => props.userTitle.review_text, (newText: string | null) => {
+    if (!newText) {
+        parsedReview.value = [];
+        return;
+    }
+    
+    const parts = newText.split(/(<[^<>]+>)/g);
+    parsedReview.value = parts.map((part: string, index: number) => {
+        if (part.startsWith('<') && part.endsWith('>') && part.length > 2) {
+            return {
+                id: index,
+                text: part.slice(1, -1),
+                isSpoiler: true,
+                isRevealed: false
+            };
+        }
+        return {
+            id: index,
+            text: part,
+            isSpoiler: false,
+            isRevealed: false
+        };
+    }).filter((part: ParsedSegment) => part.text.length > 0);
+}, { immediate: true });
+
+const toggleSpoiler = (id: number) => {
+    const segment = parsedReview.value.find(s => s.id === id);
+    if (segment) {
+        segment.isRevealed = !segment.isRevealed;
+    }
+};
 </script>
 
 <template>
@@ -132,9 +176,23 @@ const shouldShowReadMore = computed(() => {
       <!-- Review -->
       <!-- Review -->
       <div v-if="userTitle.review_text" class="text-sm text-[var(--color-text-secondary)] max-w-2xl">
-        <p :class="{ 'line-clamp-3': !isExpanded }" class="leading-relaxed opacity-90 transition-all duration-300 break-words">
-          {{ userTitle.review_text }}
-        </p>
+        <div 
+          class="leading-relaxed opacity-90 transition-all duration-300 break-words whitespace-pre-wrap"
+          :class="{ 'line-clamp-3': !isExpanded && !isRevealed }" 
+        >
+          <span 
+            v-for="segment in parsedReview" 
+            :key="segment.id"
+            :class="[
+              segment.isSpoiler ? 'cursor-pointer transition-all duration-200 py-0.5 px-1 rounded mx-0.5 select-none' : '',
+              segment.isSpoiler && !segment.isRevealed ? 'spoiler-hidden' : '',
+              segment.isSpoiler && segment.isRevealed ? 'spoiler-revealed' : ''
+            ]"
+            @click="segment.isSpoiler && toggleSpoiler(segment.id)"
+            :title="segment.isSpoiler && !segment.isRevealed ? 'Нажмите, чтобы показать спойлер' : ''"
+          >{{ segment.text }}</span>
+        </div>
+        
         <button 
           v-if="shouldShowReadMore" 
           @click.stop="isExpanded = !isExpanded" 
@@ -150,3 +208,21 @@ const shouldShowReadMore = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.spoiler-hidden {
+  background: #3f3f46;
+  color: transparent;
+  filter: blur(4px);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.spoiler-hidden:hover {
+  background: #52525b;
+}
+.spoiler-revealed {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-text-primary);
+  transition: all 0.2s;
+}
+</style>

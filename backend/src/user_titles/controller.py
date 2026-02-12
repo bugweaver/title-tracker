@@ -68,6 +68,7 @@ class UserTitlesController(Controller):
             user_title.status = data.status
             user_title.score = data.score
             user_title.review_text = data.review_text
+            user_title.is_spoiler = data.is_spoiler
             
             if data.finished_at:
                 # Ensure naive datetime if coming from aware source
@@ -91,6 +92,7 @@ class UserTitlesController(Controller):
                 status=data.status,
                 score=data.score,
                 review_text=data.review_text,
+                is_spoiler=data.is_spoiler,
                 finished_at=finished_at
             )
             db_session.add(user_title)
@@ -103,5 +105,6 @@ class UserTitlesController(Controller):
             title_id=user_title.title_id,
             status=user_title.status,
             score=user_title.score,
+            is_spoiler=user_title.is_spoiler,
             finished_at=user_title.finished_at
         )

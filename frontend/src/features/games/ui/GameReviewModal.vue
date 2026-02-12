@@ -12,6 +12,7 @@ const props = defineProps<{
     status: UserTitleStatus;
     score: number | null;
     review_text: string | null;
+    is_spoiler?: boolean;
     finished_at?: string | null;
   } | null;
 }>();
@@ -107,6 +108,29 @@ const yearOptions = computed(() => {
 //   return rating.value === 0;
 // });
 
+const textareaRef = ref<HTMLTextAreaElement | null>(null);
+const insertSpoiler = () => {
+  if (!textareaRef.value) return;
+  
+  const el = textareaRef.value;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const text = review.value;
+  
+  const before = text.substring(0, start);
+  const selection = text.substring(start, end);
+  const after = text.substring(end);
+  
+  review.value = before + '<' + (selection || 'спойлер') + '>' + after;
+  
+  // Restore focus and selection
+  setTimeout(() => {
+    el.focus();
+    const newCursorPos = start + 1 + (selection.length || 7) + 1;
+    el.setSelectionRange(newCursorPos, newCursorPos);
+  }, 0);
+};
+
 const handleSubmit = async () => {
   if (!props.title) return;
   
@@ -132,6 +156,7 @@ const handleSubmit = async () => {
       status: status.value,
       score: status.value === UserTitleStatus.PLANNED ? undefined : (rating.value || undefined),
       review_text: review.value || undefined,
+      is_spoiler: /<[^<>]+>/.test(review.value),
       finished_at: finishedAtIso,
     });
     emit('added');
@@ -232,12 +257,23 @@ const handleSubmit = async () => {
         <div class="space-y-2">
           <textarea 
             v-model="review" 
+            ref="textareaRef"
             class="w-full h-32 bg-zinc-800 rounded-lg p-3 text-white resize-none outline-none focus:ring-2 focus:ring-primary-500 placeholder-zinc-600"
             placeholder="Напишите ваше мнение..."
             maxlength="5000"
           ></textarea>
-          <div class="flex justify-between pl-2">
+          <div class="flex justify-between pl-2 items-center">
             <span class="text-xs text-zinc-500">{{ review.length }} / 5000</span>
+            
+            <button 
+              type="button"
+              @click="insertSpoiler"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors text-zinc-400 hover:text-white hover:bg-zinc-700"
+              title="Обернуть выделенный текст в спойлер"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              Спойлер
+            </button>
           </div>
         </div>
       </div>

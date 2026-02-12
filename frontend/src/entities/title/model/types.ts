@@ -32,6 +32,7 @@ export interface UserTitle {
   status: UserTitleStatus;
   score: number | null;
   review_text: string | null;
+  is_spoiler: boolean;
   created_at: string;
   updated_at: string;
   title: Title;
