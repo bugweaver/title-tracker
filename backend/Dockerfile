@@ -39,4 +39,4 @@ ENV PYTHONPATH=/app/src
 EXPOSE 8000
 
 # Команда по умолчанию (для Prod)
-CMD ["sh", "-c", "alembic -c src/alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic -c alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
