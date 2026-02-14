@@ -114,7 +114,7 @@ jobs:
           source: "docker-compose.deploy.yml,nginx/default.conf"
           target: "~/title-tracker"
 
-      - name: Deploy via SSH
+      - name: Deploy via SSHhttps://www.google.com/search?q=protonmail&newwindow=1&sca_esv=109ab09de071e349&sxsrf=ANbL-n5QeCz3e4fX5IX2acmO2Tc2r_6Irg%3A1770991560745&ei=yC-PacyJLaupwPAPgfvfsQ8&biw=1920&bih=949&oq=proton+&gs_lp=Egxnd3Mtd2l6LXNlcnAiB3Byb3RvbiAqAggBMgcQABiABBgKMgcQABiABBgKMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBxAAGIAEGAoyBRAAGIAEMgUQABiABEj-JlAAWN4TcAN4AZABAJgBVaAB_ASqAQIxMLgBA8gBAPgBAZgCDKACoAWoAgDCAgUQLhiABMICDRAuGIAEGNEDGMcBGArCAgsQABiABBiRAhiKBcICCxAuGIAEGNEDGMcBwgIKEAAYgAQYQxiKBZgDAPEFX-3N75SsR-eSBwIxMqAHhVayBwIxMLgHmgXCBwUwLjguNMgHHIAIAA&sclient=gws-wiz-serp
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}

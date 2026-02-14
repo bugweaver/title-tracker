@@ -83,6 +83,7 @@ services:
       - jellyfin_config:/config
       - jellyfin_cache:/cache
       - ./media:/media
+      - ./jellyfin/network.xml:/config/config/network.xml
     environment:
       - JELLYFIN_PublishedServerUrl=http://titletracker.site/jellyfin
     networks:
