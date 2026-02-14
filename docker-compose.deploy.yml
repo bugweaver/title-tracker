@@ -46,6 +46,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - jellyfin
     networks:
       - tt_network
 
@@ -74,6 +75,19 @@ services:
     networks:
       - tt_network
 
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: title_tracker_jellyfin
+    restart: always
+    volumes:
+      - jellyfin_config:/config
+      - jellyfin_cache:/cache
+      - ./media:/media
+    environment:
+      - JELLYFIN_PublishedServerUrl=http://titletracker.site/jellyfin
+    networks:
+      - tt_network
+
 networks:
   tt_network:
     driver: bridge
@@ -82,3 +96,5 @@ volumes:
   postgres_data:
   redis_data:
   static_volume:
+  jellyfin_config:
+  jellyfin_cache:
