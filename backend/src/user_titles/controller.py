@@ -66,8 +66,15 @@ class UserTitlesController(Controller):
         user_title = result.scalar_one_or_none()
 
         is_new = user_title is None
+        has_meaningful_change = False
 
         if user_title:
+            # Track meaningful changes before updating
+            if (user_title.status != data.status
+                or user_title.score != data.score
+                or user_title.review_text != data.review_text):
+                has_meaningful_change = True
+
             # Update existing
             user_title.status = data.status
             user_title.score = data.score
@@ -102,8 +109,11 @@ class UserTitlesController(Controller):
 
         await db_session.flush()
 
-        # 3. Create notifications for followers (only for new titles)
-        if is_new:
+        # 3. Create notifications for followers
+        should_notify = is_new or has_meaningful_change
+        if should_notify:
+            notif_type = NotificationType.NEW_TITLE if is_new else NotificationType.TITLE_UPDATED
+
             follower_stmt = select(subscriptions_table.c.follower_id).where(
                 subscriptions_table.c.following_id == user_id
             )
@@ -116,7 +126,7 @@ class UserTitlesController(Controller):
                         recipient_id=follower_id,
                         actor_id=user_id,
                         user_title_id=user_title.id,
-                        type=NotificationType.NEW_TITLE,
+                        type=notif_type,
                     )
                     for follower_id in follower_ids
                 ]

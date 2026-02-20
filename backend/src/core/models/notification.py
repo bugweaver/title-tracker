@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 class NotificationType(str, Enum):
     NEW_TITLE = "new_title"
+    TITLE_UPDATED = "title_updated"
 
 
 class Notification(IntIdPkMixin, Base):

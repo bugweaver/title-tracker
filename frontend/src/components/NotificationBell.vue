@@ -130,7 +130,7 @@ const categoryIcon = (cat: string) => {
             <div class="notification-content">
               <p class="notification-text">
                 <strong>{{ n.actor.name || n.actor.login }}</strong>
-                добавил тайтл
+                {{ n.type === 'title_updated' ? 'обновил тайтл' : 'добавил тайтл' }}
                 <span class="title-name">{{ categoryIcon(n.title.category) }} {{ n.title.name }}</span>
               </p>
               <span class="notification-time">{{ formatTime(n.created_at) }}</span>
