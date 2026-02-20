@@ -2,7 +2,7 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import { useUserStore } from '@/entities/user';
 import { useTitleStore, TitleCategory, UserTitleStatus } from '@/entities/title';
-import { type TitleSearchResult, usersApi } from '@/shared/api';
+import { type TitleSearchResult, usersApi, type UserProfile } from '@/shared/api';
 import { AppSelect } from '@/shared/ui';
 import GameSearchModal from '@/features/games/ui/GameSearchModal.vue';
 import GameReviewModal from '@/features/games/ui/GameReviewModal.vue';
@@ -18,6 +18,7 @@ const activeStatus = ref<UserTitleStatus | 'all'>('all');
 const isSearchModalOpen = ref(false);
 const isReviewModalOpen = ref(false);
 const selectedTitle = ref<TitleSearchResult | null>(null);
+const userProfile = ref<UserProfile | null>(null);
 
 const handleTitleSelect = (title: TitleSearchResult) => {
   selectedTitle.value = title;
@@ -91,8 +92,15 @@ const handleAvatarSave = async (blob: Blob) => {
 };
 
 // Fetch data on mount
-onMounted(() => {
+onMounted(async () => {
   titleStore.fetchMyTitles();
+  if (userStore.user?.id) {
+    try {
+      userProfile.value = await usersApi.getUser(userStore.user.id);
+    } catch (e) {
+      console.error('Failed to fetch user profile for stats', e);
+    }
+  }
 });
 
 const tabs = [
@@ -298,14 +306,14 @@ const activeSearchCategory = computed(() => {
             <span class="text-lg font-bold text-text">{{ titleStore.titles.length }}</span>
             <span class="text-sm text-text-muted">Тайтлов</span>
           </div>
-          <div class="flex flex-col">
-            <span class="text-lg font-bold text-text">0</span>
+          <RouterLink :to="`/user/${user?.id}/connections?tab=following`" class="stat-link flex flex-col">
+            <span class="text-lg font-bold text-text">{{ userProfile?.following_count ?? 0 }}</span>
             <span class="text-sm text-text-muted">Подписки</span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-lg font-bold text-text">0</span>
+          </RouterLink>
+          <RouterLink :to="`/user/${user?.id}/connections?tab=followers`" class="stat-link flex flex-col">
+            <span class="text-lg font-bold text-text">{{ userProfile?.followers_count ?? 0 }}</span>
             <span class="text-sm text-text-muted">Подписчики</span>
-          </div>
+          </RouterLink>
         </div>
       </div>
     </header>
@@ -419,3 +427,18 @@ const activeSearchCategory = computed(() => {
   />
 
 </template>
+
+<style scoped>
+.stat-link {
+  text-decoration: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  margin: -4px -8px;
+  transition: background 0.15s;
+}
+
+.stat-link:hover {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
+}
+</style>
