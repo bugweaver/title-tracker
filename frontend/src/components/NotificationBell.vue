@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useNotificationStore } from '@/stores/notifications';
+import type { NotificationData } from '@/shared/api/notifications';
 
 const router = useRouter();
 const store = useNotificationStore();
@@ -26,7 +27,7 @@ function closeDropdown() {
   isOpen.value = false;
 }
 
-async function handleNotificationClick(notification: any) {
+async function handleNotificationClick(notification: NotificationData) {
   if (!notification.is_read) {
     await store.markAsRead(notification.id);
   }
