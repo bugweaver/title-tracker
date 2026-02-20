@@ -244,12 +244,8 @@ watch(activeTab, () => {
 
       <button
         v-if="!isOwnProfile"
-        class="px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer flex-shrink-0 self-center whitespace-nowrap"
-        :class="[
-          user?.is_following
-            ? 'bg-background-soft border border-border text-text hover:bg-red-500/10 hover:border-red-500 hover:text-red-500'
-            : 'bg-primary-500 border border-primary-500 text-white hover:bg-primary-600'
-        ]"
+        class="follow-btn"
+        :class="{ 'follow-btn--following': user?.is_following }"
         :disabled="followLoading"
         @click="toggleFollow"
       >
@@ -328,3 +324,36 @@ watch(activeTab, () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.follow-btn {
+  padding: 10px 24px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: center;
+  white-space: nowrap;
+  transition: all 0.2s;
+  background: var(--color-primary-500);
+  border: 1px solid var(--color-primary-500);
+  color: white;
+}
+
+.follow-btn:hover {
+  background: var(--color-primary-600);
+}
+
+.follow-btn--following {
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.follow-btn--following:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+</style>
