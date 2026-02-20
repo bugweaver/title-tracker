@@ -11,7 +11,7 @@ from litestar.exceptions import NotFoundException
 from core.models.db_helper import get_db_session
 from core.models import User
 from core.models.notification import Notification
-from core.models.title import UserTitle, Title
+from core.models.title import UserTitle
 from .schemas import NotificationRead, UnreadCountResponse, ActorInfo, TitleInfo
 
 
