@@ -121,7 +121,7 @@ const goToReview = () => {
 
 <template>
   <div 
-    class="flex gap-5 p-5 bg-[var(--color-bg-primary)] border border-[var(--color-border-primary)] rounded-xl shadow-sm hover:shadow-md hover:border-[var(--color-primary-500)] transition-all cursor-pointer"
+    class="game-card flex gap-5 p-5 bg-[var(--color-bg-primary)] border border-[var(--color-border-primary)] rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer"
     @click="goToReview"
   >
     <!-- Poster -->
@@ -234,5 +234,9 @@ const goToReview = () => {
   background: rgba(239, 68, 68, 0.1);
   color: var(--color-text-primary);
   transition: all 0.2s;
+}
+
+.game-card:hover {
+  border-color: var(--color-primary-500);
 }
 </style>
