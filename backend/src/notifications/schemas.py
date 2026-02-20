@@ -26,9 +26,9 @@ class NotificationRead(BaseModel):
     type: str
     is_read: bool
     created_at: datetime
-    user_title_id: int
+    user_title_id: int | None = None
     actor: ActorInfo
-    title: TitleInfo
+    title: TitleInfo | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

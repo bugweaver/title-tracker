@@ -231,14 +231,14 @@ watch(activeTab, () => {
             <span class="text-lg font-bold text-text">{{ titles.length }}</span>
             <span class="text-sm text-text-muted">Тайтлов</span>
           </div>
-          <div class="flex flex-col">
+          <RouterLink :to="`/user/${userId}/connections?tab=following`" class="stat-link flex flex-col">
             <span class="text-lg font-bold text-text">{{ user?.following_count ?? 0 }}</span>
             <span class="text-sm text-text-muted">Подписки</span>
-          </div>
-          <div class="flex flex-col">
+          </RouterLink>
+          <RouterLink :to="`/user/${userId}/connections?tab=followers`" class="stat-link flex flex-col">
             <span class="text-lg font-bold text-text">{{ user?.followers_count ?? 0 }}</span>
             <span class="text-sm text-text-muted">Подписчики</span>
-          </div>
+          </RouterLink>
         </div>
       </div>
 
@@ -355,5 +355,18 @@ watch(activeTab, () => {
   background: rgba(239, 68, 68, 0.1);
   border-color: #ef4444;
   color: #ef4444;
+}
+
+.stat-link {
+  text-decoration: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  margin: -4px -8px;
+  transition: background 0.15s;
+}
+
+.stat-link:hover {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
 }
 </style>

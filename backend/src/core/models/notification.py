@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 class NotificationType(str, Enum):
     NEW_TITLE = "new_title"
     TITLE_UPDATED = "title_updated"
+    NEW_FOLLOWER = "new_follower"
 
 
 class Notification(IntIdPkMixin, Base):
@@ -25,8 +26,8 @@ class Notification(IntIdPkMixin, Base):
     actor_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    user_title_id: Mapped[int] = mapped_column(
-        ForeignKey("user_titles.id", ondelete="CASCADE"), nullable=False
+    user_title_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user_titles.id", ondelete="CASCADE"), nullable=True
     )
     type: Mapped[NotificationType] = mapped_column(
         String(50), nullable=False, default=NotificationType.NEW_TITLE

@@ -19,9 +19,9 @@ export interface NotificationData {
   type: string;
   is_read: boolean;
   created_at: string;
-  user_title_id: number;
+  user_title_id: number | null;
   actor: NotificationActor;
-  title: NotificationTitle;
+  title: NotificationTitle | null;
 }
 
 export interface UnreadCountResponse {

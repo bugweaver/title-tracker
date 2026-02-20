@@ -57,6 +57,12 @@ const router = createRouter({
       component: () => import('@/pages/review/ReviewPage.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/user/:id/connections',
+      name: 'connections',
+      component: () => import('@/pages/connections/ConnectionsPage.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 

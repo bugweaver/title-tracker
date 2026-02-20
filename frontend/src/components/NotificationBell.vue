@@ -32,7 +32,11 @@ async function handleNotificationClick(notification: NotificationData) {
     await store.markAsRead(notification.id);
   }
   isOpen.value = false;
-  router.push(`/review/${notification.user_title_id}`);
+  if (notification.type === 'new_follower') {
+    router.push(`/user/${notification.actor.id}`);
+  } else {
+    router.push(`/review/${notification.user_title_id}`);
+  }
 }
 
 async function handleMarkAllRead() {
@@ -130,8 +134,13 @@ const categoryIcon = (cat: string) => {
             <div class="notification-content">
               <p class="notification-text">
                 <strong>{{ n.actor.name || n.actor.login }}</strong>
-                {{ n.type === 'title_updated' ? 'обновил тайтл' : 'добавил тайтл' }}
-                <span class="title-name">{{ categoryIcon(n.title.category) }} {{ n.title.name }}</span>
+                <template v-if="n.type === 'new_follower'">
+                  подписался на вас
+                </template>
+                <template v-else>
+                  {{ n.type === 'title_updated' ? 'обновил тайтл' : 'добавил тайтл' }}
+                  <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>
+                </template>
               </p>
               <span class="notification-time">{{ formatTime(n.created_at) }}</span>
             </div>

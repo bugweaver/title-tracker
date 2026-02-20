@@ -13,6 +13,7 @@ from litestar.exceptions import NotFoundException
 from core.models.db_helper import get_db_session
 from core.models import User
 from core.models.user import subscriptions_table
+from core.models.notification import Notification, NotificationType
 from .schemas import UserRead, UserProfileRead, FollowStatusResponse
 
 
@@ -133,6 +134,16 @@ class UsersController(Controller):
             following_id=user_id,
         )
         await db_session.execute(stmt)
+
+        # Notify the followed user
+        notification = Notification(
+            recipient_id=user_id,
+            actor_id=current_user_id,
+            user_title_id=None,
+            type=NotificationType.NEW_FOLLOWER,
+        )
+        db_session.add(notification)
+
         await db_session.commit()
 
         return FollowStatusResponse(is_following=True)
@@ -155,6 +166,52 @@ class UsersController(Controller):
         await db_session.commit()
 
         return FollowStatusResponse(is_following=False)
+
+    @get("/{user_id:int}/followers")
+    async def get_followers(
+        self,
+        user_id: int,
+        db_session: AsyncSession,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[UserRead]:
+        """Get list of users who follow this user."""
+        stmt = (
+            select(User)
+            .join(
+                subscriptions_table,
+                subscriptions_table.c.follower_id == User.id,
+            )
+            .where(subscriptions_table.c.following_id == user_id)
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await db_session.execute(stmt)
+        users = result.scalars().all()
+        return [UserRead.model_validate(u) for u in users]
+
+    @get("/{user_id:int}/following")
+    async def get_following(
+        self,
+        user_id: int,
+        db_session: AsyncSession,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[UserRead]:
+        """Get list of users this user follows."""
+        stmt = (
+            select(User)
+            .join(
+                subscriptions_table,
+                subscriptions_table.c.following_id == User.id,
+            )
+            .where(subscriptions_table.c.follower_id == user_id)
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await db_session.execute(stmt)
+        users = result.scalars().all()
+        return [UserRead.model_validate(u) for u in users]
 
     @post("/me/avatar")
     async def upload_avatar(

@@ -29,4 +29,8 @@ export const usersApi = {
     apiClient.post<FollowStatus>(`/users/${userId}/follow`),
   unfollow: (userId: number) =>
     apiClient.delete<FollowStatus>(`/users/${userId}/follow`),
+  getFollowers: (userId: number) =>
+    apiClient.get<User[]>(`/users/${userId}/followers`),
+  getFollowing: (userId: number) =>
+    apiClient.get<User[]>(`/users/${userId}/following`),
 };

@@ -27,6 +27,10 @@ def _build_notification_query():
 
 
 def _serialize_notification(n: Notification) -> NotificationRead:
+    title_info = None
+    if n.user_title and n.user_title.title:
+        title_info = TitleInfo.model_validate(n.user_title.title)
+
     return NotificationRead(
         id=n.id,
         type=n.type,
@@ -34,7 +38,7 @@ def _serialize_notification(n: Notification) -> NotificationRead:
         created_at=n.created_at,
         user_title_id=n.user_title_id,
         actor=ActorInfo.model_validate(n.actor),
-        title=TitleInfo.model_validate(n.user_title.title),
+        title=title_info,
     )
 
 
