@@ -40,4 +40,7 @@ export const notificationsApi = {
 
   markAllAsRead: () =>
     apiClient.request<{ status: string }>('/notifications/read-all', { method: 'PATCH' }),
+
+  clearRead: () =>
+    apiClient.delete<{ status: string }>('/notifications/clear'),
 };

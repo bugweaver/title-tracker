@@ -52,6 +52,15 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
   }
 
+  async function clearRead() {
+    try {
+      await notificationsApi.clearRead();
+      notifications.value = notifications.value.filter(n => !n.is_read);
+    } catch (e) {
+      console.error('Failed to clear notifications', e);
+    }
+  }
+
   function startPolling(intervalMs = 30000) {
     stopPolling();
     fetchUnreadCount();
@@ -73,6 +82,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     fetchUnreadCount,
     markAsRead,
     markAllAsRead,
+    clearRead,
     startPolling,
     stopPolling,
   };

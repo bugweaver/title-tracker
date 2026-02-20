@@ -43,6 +43,10 @@ async function handleMarkAllRead() {
   await store.markAllAsRead();
 }
 
+async function handleClear() {
+  await store.clearRead();
+}
+
 function formatTime(dateStr: string) {
   const date = new Date(dateStr);
   const now = new Date();
@@ -95,13 +99,22 @@ const categoryIcon = (cat: string) => {
       <div v-if="isOpen" class="notification-dropdown">
         <div class="notification-header">
           <h3>Уведомления</h3>
-          <button
-            v-if="store.unreadCount > 0"
-            class="mark-all-btn"
-            @click="handleMarkAllRead"
-          >
-            Прочитать все
-          </button>
+          <div class="header-actions">
+            <button
+              v-if="store.unreadCount > 0"
+              class="mark-all-btn"
+              @click="handleMarkAllRead"
+            >
+              Прочитать все
+            </button>
+            <button
+              v-if="store.notifications.length > 0"
+              class="clear-btn"
+              @click="handleClear"
+            >
+              Очистить
+            </button>
+          </div>
         </div>
 
         <div v-if="store.isLoading" class="notification-loading">
@@ -255,6 +268,27 @@ const categoryIcon = (cat: string) => {
 
 .mark-all-btn:hover {
   background: var(--color-primary-500-10, rgba(99, 102, 241, 0.1));
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.clear-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.clear-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .notification-loading {

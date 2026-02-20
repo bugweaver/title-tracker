@@ -1,10 +1,10 @@
 from typing import Any
 
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from litestar import Controller, get, patch, Request
+from litestar import Controller, get, patch, delete as litestar_delete, Request
 from litestar.di import Provide
 from litestar.exceptions import NotFoundException
 
@@ -129,6 +129,24 @@ class NotificationsController(Controller):
                 Notification.is_read == False,  # noqa: E712
             )
             .values(is_read=True)
+        )
+        await db_session.execute(stmt)
+        await db_session.commit()
+        return {"status": "ok"}
+
+    @litestar_delete("/clear", status_code=200)
+    async def clear_notifications(
+        self,
+        request: Request[User, dict, Any],
+        db_session: AsyncSession,
+    ) -> dict[str, str]:
+        """Delete all read notifications for the current user."""
+        stmt = (
+            delete(Notification)
+            .where(
+                Notification.recipient_id == request.user.id,
+                Notification.is_read == True,  # noqa: E712
+            )
         )
         await db_session.execute(stmt)
         await db_session.commit()
