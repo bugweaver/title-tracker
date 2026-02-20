@@ -5,6 +5,7 @@ import { useUserStore } from '@/entities/user'
 import { useTheme } from '@/shared/composables'
 
 import { useRouter } from 'vue-router'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -79,7 +80,8 @@ async function handleLogout() {
           Настройки
         </RouterLink>
           <div class="flex-grow"></div>
-          <div class="flex items-center gap-3 justify-end">
+          <NotificationBell />
+          <div class="flex items-center gap-3 justify-end" style="margin-left: 10px;">
              <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border border-border">
                 <img 
                   v-if="userStore.user?.avatar_url" 

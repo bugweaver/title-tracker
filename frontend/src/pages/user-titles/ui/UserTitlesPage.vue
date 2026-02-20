@@ -5,13 +5,18 @@ import { titlesApi } from '@/shared/api/titles';
 import { TitleCategory, UserTitleStatus, type UserTitle } from '@/entities/title';
 import UserGameCard from '@/features/games/ui/UserGameCard.vue';
 import AppSelect from '@/shared/ui/AppSelect.vue';
-import { usersApi, type User } from '@/shared/api';
+import { usersApi, type UserProfile } from '@/shared/api';
+import { useUserStore } from '@/entities/user';
 
 const route = useRoute();
+const userStore = useUserStore();
 const userId = computed(() => Number(route.params.id));
 const titles = ref<UserTitle[]>([]);
-const user = ref<User | null>(null);
+const user = ref<UserProfile | null>(null);
 const isLoading = ref(false);
+const followLoading = ref(false);
+
+const isOwnProfile = computed(() => userStore.user?.id === userId.value);
 
 const activeTab = ref<TitleCategory>(TitleCategory.GAME);
 const activeStatus = ref<UserTitleStatus | 'all'>('all');
@@ -36,6 +41,26 @@ const fetchTitles = async () => {
         isLoading.value = false;
     }
 }
+
+const toggleFollow = async () => {
+  if (!user.value || followLoading.value) return;
+  followLoading.value = true;
+  try {
+    if (user.value.is_following) {
+      await usersApi.unfollow(userId.value);
+      user.value.is_following = false;
+      user.value.followers_count--;
+    } else {
+      await usersApi.follow(userId.value);
+      user.value.is_following = true;
+      user.value.followers_count++;
+    }
+  } catch (e) {
+    console.error('Follow action failed', e);
+  } finally {
+    followLoading.value = false;
+  }
+};
 
 onMounted(() => {
     fetchUser();
@@ -185,7 +210,7 @@ watch(activeTab, () => {
 <template>
   <div class="max-w-screen-xl mx-auto p-8 flex flex-col gap-7">
     <header class="flex items-center gap-8 p-8 bg-surface border border-border rounded-xl shadow-sm">
-       <div class="w-[100px] h-[100px] rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-4xl font-bold border-4 border-background shadow-[0_0_0_2px_var(--color-primary-200)] overflow-hidden">
+       <div class="w-[100px] h-[100px] rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-4xl font-bold border-4 border-background shadow-[0_0_0_2px_var(--color-primary-200)] overflow-hidden flex-shrink-0">
         <img 
           v-if="user?.avatar_url" 
           :src="user.avatar_url" 
@@ -195,7 +220,7 @@ watch(activeTab, () => {
         <span v-else>{{ user?.login ? user.login.substring(0, 1).toUpperCase() : '#' }}</span>
       </div>
       
-      <div>
+      <div class="flex-grow">
         <div class="mb-4 leading-tight">
           <h1 class="text-3xl font-bold text-text m-0">{{ user?.name || user?.login || `Пользователь #${userId}` }}</h1>
           <p v-if="user?.name" class="text-text-secondary">@{{ user.login }}</p>
@@ -206,16 +231,30 @@ watch(activeTab, () => {
             <span class="text-lg font-bold text-text">{{ titles.length }}</span>
             <span class="text-sm text-text-muted">Тайтлов</span>
           </div>
-          <div class="flex flex-col opacity-50">
-            <span class="text-lg font-bold text-text">0</span>
+          <div class="flex flex-col">
+            <span class="text-lg font-bold text-text">{{ user?.following_count ?? 0 }}</span>
             <span class="text-sm text-text-muted">Подписки</span>
           </div>
-          <div class="flex flex-col opacity-50">
-            <span class="text-lg font-bold text-text">0</span>
+          <div class="flex flex-col">
+            <span class="text-lg font-bold text-text">{{ user?.followers_count ?? 0 }}</span>
             <span class="text-sm text-text-muted">Подписчики</span>
           </div>
         </div>
       </div>
+
+      <button
+        v-if="!isOwnProfile"
+        class="px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer flex-shrink-0 self-center"
+        :class="[
+          user?.is_following
+            ? 'bg-background-soft border border-border text-text hover:bg-red-500/10 hover:border-red-500 hover:text-red-500'
+            : 'bg-primary-500 border border-primary-500 text-white hover:bg-primary-600'
+        ]"
+        :disabled="followLoading"
+        @click="toggleFollow"
+      >
+        {{ user?.is_following ? 'Отписаться' : 'Подписаться' }}
+      </button>
     </header>
 
     <div class="flex flex-col gap-6">

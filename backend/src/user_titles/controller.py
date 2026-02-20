@@ -7,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models import User, Title, UserTitle, TitleCategory, UserTitleStatus
+from core.models.notification import Notification, NotificationType
+from core.models.user import subscriptions_table
 from core.models.db_helper import get_db_session
 from .schemas import AddUserTitleRequest, UserTitleRead
 
@@ -49,11 +51,11 @@ class UserTitlesController(Controller):
                 external_id=str(data.external_id),
                 cover_image=data.cover_url,
                 release_year=data.release_year,
-                description=None, # genres are now separate
+                description=None,
                 genres=data.genres
             )
             db_session.add(title)
-            await db_session.flush() # get ID
+            await db_session.flush()
 
         # 2. Check if UserTitle exists
         stmt = select(UserTitle).where(
@@ -63,15 +65,16 @@ class UserTitlesController(Controller):
         result = await db_session.execute(stmt)
         user_title = result.scalar_one_or_none()
 
+        is_new = user_title is None
+
         if user_title:
             # Update existing
             user_title.status = data.status
             user_title.score = data.score
             user_title.review_text = data.review_text
             user_title.is_spoiler = data.is_spoiler
-            
+
             if data.finished_at:
-                # Ensure naive datetime if coming from aware source
                 user_title.finished_at = data.finished_at.replace(tzinfo=None)
             elif data.status == UserTitleStatus.COMPLETED and not user_title.finished_at:
                 user_title.finished_at = datetime.now()
@@ -82,7 +85,7 @@ class UserTitlesController(Controller):
             finished_at = data.finished_at
             if finished_at:
                 finished_at = finished_at.replace(tzinfo=None)
-            
+
             if not finished_at and data.status == UserTitleStatus.COMPLETED:
                 finished_at = datetime.now()
 
@@ -97,8 +100,30 @@ class UserTitlesController(Controller):
             )
             db_session.add(user_title)
 
+        await db_session.flush()
+
+        # 3. Create notifications for followers (only for new titles)
+        if is_new:
+            follower_stmt = select(subscriptions_table.c.follower_id).where(
+                subscriptions_table.c.following_id == user_id
+            )
+            follower_result = await db_session.execute(follower_stmt)
+            follower_ids = [row[0] for row in follower_result.fetchall()]
+
+            if follower_ids:
+                notifications = [
+                    Notification(
+                        recipient_id=follower_id,
+                        actor_id=user_id,
+                        user_title_id=user_title.id,
+                        type=NotificationType.NEW_TITLE,
+                    )
+                    for follower_id in follower_ids
+                ]
+                db_session.add_all(notifications)
+
         await db_session.commit()
-        
+
         return UserTitleRead(
             id=user_title.id,
             user_id=user_title.user_id,

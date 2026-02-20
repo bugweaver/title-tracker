@@ -17,6 +17,7 @@ from .db_helper import db_helper
 # from .role import Role, user_roles
 from .user import User
 from .title import Title, UserTitle, TitleCategory, UserTitleStatus
+from .notification import Notification, NotificationType
 
 __all__ = (
     "db_helper",
@@ -26,5 +27,7 @@ __all__ = (
     "UserTitle",
     "TitleCategory",
     "UserTitleStatus",
+    "Notification",
+    "NotificationType",
 )
 

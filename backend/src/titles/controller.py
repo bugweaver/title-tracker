@@ -52,6 +52,26 @@ class TitleController(Controller):
         
         return [UserTitleRead.model_validate(ut) for ut in user_titles]
 
+    @get("/entry/{user_title_id:int}")
+    async def get_user_title_entry(
+        self, user_title_id: int, db_session: AsyncSession
+    ) -> UserTitleRead:
+        """Get a single user-title entry by its ID (for review page)."""
+        from litestar.exceptions import NotFoundException
+
+        stmt = (
+            select(UserTitle)
+            .options(selectinload(UserTitle.title))
+            .where(UserTitle.id == user_title_id)
+        )
+        result = await db_session.execute(stmt)
+        user_title = result.scalar_one_or_none()
+
+        if not user_title:
+            raise NotFoundException(detail="Entry not found")
+
+        return UserTitleRead.model_validate(user_title)
+
     @post("/")
     async def create_title(
         self, data: TitleCreate, db_session: AsyncSession

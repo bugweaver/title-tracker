@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { type UserTitleStatus } from '@/entities/title';
 import { TitleCategory } from '@/entities/title';
 
@@ -110,10 +111,19 @@ const toggleSpoiler = (id: number) => {
         segment.isRevealed = !segment.isRevealed;
     }
 };
+
+const router = useRouter();
+
+const goToReview = () => {
+  router.push(`/review/${props.userTitle.id}`);
+};
 </script>
 
 <template>
-  <div class="flex gap-5 p-5 bg-[var(--color-bg-primary)] border border-[var(--color-border-primary)] rounded-xl shadow-sm hover:shadow-md transition-all">
+  <div 
+    class="flex gap-5 p-5 bg-[var(--color-bg-primary)] border border-[var(--color-border-primary)] rounded-xl shadow-sm hover:shadow-md hover:border-[var(--color-primary-500)] transition-all cursor-pointer"
+    @click="goToReview"
+  >
     <!-- Poster -->
     <div class="w-32 h-44 bg-[var(--color-bg-tertiary)] rounded-lg flex-shrink-0 overflow-hidden shadow-sm relative group">
       <img 
@@ -188,7 +198,7 @@ const toggleSpoiler = (id: number) => {
               segment.isSpoiler && !segment.isRevealed ? 'spoiler-hidden' : '',
               segment.isSpoiler && segment.isRevealed ? 'spoiler-revealed' : ''
             ]"
-            @click="segment.isSpoiler && toggleSpoiler(segment.id)"
+            @click.stop="segment.isSpoiler && toggleSpoiler(segment.id)"
             :title="segment.isSpoiler && !segment.isRevealed ? 'Нажмите, чтобы показать спойлер' : ''"
           >{{ segment.text }}</span>
         </div>

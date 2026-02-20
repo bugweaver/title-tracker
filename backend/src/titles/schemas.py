@@ -34,6 +34,7 @@ class UserTitleRead(UserTitleBase):
     id: int
     user_id: int
     title_id: int
+    is_spoiler: bool = False
     created_at: datetime
     updated_at: datetime
     finished_at: datetime | None = None

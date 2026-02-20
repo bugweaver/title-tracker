@@ -51,6 +51,12 @@ const router = createRouter({
       component: () => import('@/pages/settings/SettingsPage.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/review/:id',
+      name: 'review',
+      component: () => import('@/pages/review/ReviewPage.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
