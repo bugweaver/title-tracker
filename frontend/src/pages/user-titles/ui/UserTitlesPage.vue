@@ -244,7 +244,7 @@ watch(activeTab, () => {
 
       <button
         v-if="!isOwnProfile"
-        class="px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer flex-shrink-0 self-center"
+        class="px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer flex-shrink-0 self-center whitespace-nowrap"
         :class="[
           user?.is_following
             ? 'bg-background-soft border border-border text-text hover:bg-red-500/10 hover:border-red-500 hover:text-red-500'
