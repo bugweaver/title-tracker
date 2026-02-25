@@ -11,6 +11,8 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models import User, UserTitle, TitleScreenshot
+from core.models.notification import Notification, NotificationType
+from core.models.user import subscriptions_table
 from core.models.db_helper import get_db_session
 from core.s3 import s3_service, ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE, MAX_SCREENSHOTS_PER_ENTRY
 from .schemas import ScreenshotRead
@@ -95,6 +97,27 @@ class ScreenshotsController(Controller):
             position=current_count,
         )
         db_session.add(screenshot)
+        await db_session.flush()
+
+        # Create notifications for followers
+        follower_stmt = select(subscriptions_table.c.follower_id).where(
+            subscriptions_table.c.following_id == user_id
+        )
+        follower_result = await db_session.execute(follower_stmt)
+        follower_ids = [row[0] for row in follower_result.fetchall()]
+
+        if follower_ids:
+            notifications = [
+                Notification(
+                    recipient_id=follower_id,
+                    actor_id=user_id,
+                    user_title_id=user_title_id,
+                    type=NotificationType.TITLE_UPDATED,
+                )
+                for follower_id in follower_ids
+            ]
+            db_session.add_all(notifications)
+
         await db_session.commit()
         await db_session.refresh(screenshot)
 
