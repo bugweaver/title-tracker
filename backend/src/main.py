@@ -7,6 +7,7 @@ from user_titles.controller import UserTitlesController
 from users.controller import UsersController
 from backup.controller import BackupController
 from notifications.controller import NotificationsController
+from screenshots.controller import ScreenshotsController
 from auth.jwt import jwt_config
 from core.models.db_helper import db_helper
 from litestar import Litestar, Router
@@ -47,6 +48,7 @@ api_router = Router(path="/api/v1", route_handlers=[
     UsersController,
     BackupController,
     NotificationsController,
+    ScreenshotsController,
 ])
 
 

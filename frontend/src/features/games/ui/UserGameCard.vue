@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { type UserTitleStatus } from '@/entities/title';
+import { type UserTitleStatus, type Screenshot } from '@/entities/title';
 import { TitleCategory } from '@/entities/title';
 
 interface Title {
@@ -23,6 +23,7 @@ interface UserTitle {
   is_spoiler?: boolean;
   title: Title;
   finished_at?: string | null;
+  screenshots?: Screenshot[];
 }
 
 const props = withDefaults(defineProps<{
@@ -117,6 +118,32 @@ const router = useRouter();
 const goToReview = () => {
   router.push(`/review/${props.userTitle.id}`);
 };
+
+// Lightbox
+const lightboxOpen = ref(false);
+const lightboxIndex = ref(0);
+
+const openLightbox = (idx: number) => {
+  lightboxIndex.value = idx;
+  lightboxOpen.value = true;
+};
+
+const closeLightbox = () => {
+  lightboxOpen.value = false;
+};
+
+const onLightboxKeydown = (e: KeyboardEvent) => {
+  if (!lightboxOpen.value) return;
+  const screenshots = props.userTitle.screenshots;
+  if (!screenshots) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowRight' && lightboxIndex.value < screenshots.length - 1) lightboxIndex.value++;
+  if (e.key === 'ArrowLeft' && lightboxIndex.value > 0) lightboxIndex.value--;
+};
+
+import { onMounted, onUnmounted } from 'vue';
+onMounted(() => window.addEventListener('keydown', onLightboxKeydown));
+onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
 </script>
 
 <template>
@@ -175,7 +202,7 @@ const goToReview = () => {
       </h3>
       
       <!-- Meta -->
-      <div class="text-sm text-[var(--color-text-secondary)] mb-3 font-medium">
+      <div class="text-sm text-[var(--color-text-secondary)] font-medium" style="margin-bottom: 5px;">
         <span v-if="userTitle.title.release_year">{{ userTitle.title.release_year }}</span>
         <span v-if="userTitle.title.release_year && userTitle.title.genres?.length" class="mx-1.5">•</span>
         <span v-if="userTitle.title.genres?.length" class="opacity-80">
@@ -211,12 +238,54 @@ const goToReview = () => {
           {{ isExpanded ? 'Свернуть' : 'Читать далее' }}
         </button>
       </div>
-      <!-- <p v-else class="text-sm text-[var(--color-text-tertiary)] italic">
-        Нет отзыва
-      </p> -->
+
+      <!-- Screenshots thumbnails -->
+      <div v-if="userTitle.screenshots && userTitle.screenshots.length > 0" class="flex gap-1.5" style="margin-top: 16px;" @click.stop>
+        <div 
+          v-for="(screenshot, idx) in userTitle.screenshots.slice(0, 4)" 
+          :key="screenshot.id"
+          class="w-16 h-12 rounded-md overflow-hidden bg-[var(--color-bg-tertiary)] flex-shrink-0 relative cursor-pointer hover:ring-2 hover:ring-[var(--color-primary-500)] transition-all"
+          @click="openLightbox(idx)"
+        >
+          <img :src="screenshot.url" class="w-full h-full object-cover" />
+          <div 
+            v-if="idx === 3 && userTitle.screenshots.length > 4" 
+            class="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-xs font-bold"
+          >+{{ userTitle.screenshots.length - 4 }}</div>
+        </div>
+      </div>
 
     </div>
   </div>
+
+  <!-- Lightbox -->
+  <Teleport to="body">
+    <div 
+      v-if="lightboxOpen && userTitle.screenshots" 
+      class="lightbox-overlay"
+      @click="closeLightbox"
+    >
+      <button class="lightbox-close" @click.stop="closeLightbox">✕</button>
+      <button 
+        v-if="lightboxIndex > 0" 
+        class="lightbox-nav lightbox-prev" 
+        @click.stop="lightboxIndex--"
+      >‹</button>
+      <div class="lightbox-content" @click.stop>
+        <img 
+          v-if="userTitle.screenshots[lightboxIndex]" 
+          :src="userTitle.screenshots[lightboxIndex]!.url" 
+          class="lightbox-img"
+        />
+        <div class="lightbox-counter">{{ lightboxIndex + 1 }} / {{ userTitle.screenshots.length }}</div>
+      </div>
+      <button 
+        v-if="lightboxIndex < userTitle.screenshots.length - 1" 
+        class="lightbox-nav lightbox-next" 
+        @click.stop="lightboxIndex++"
+      >›</button>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -239,4 +308,94 @@ const goToReview = () => {
 .game-card:hover {
   border-color: var(--color-primary-500);
 }
+
+/* Lightbox */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 101;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  font-size: 36px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 101;
+  user-select: none;
+}
+
+.lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.lightbox-prev {
+  left: 20px;
+}
+
+.lightbox-next {
+  right: 20px;
+}
+
+.lightbox-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-counter {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+}
 </style>
+

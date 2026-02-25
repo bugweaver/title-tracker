@@ -14,6 +14,12 @@ export enum UserTitleStatus {
   ON_HOLD = 'on_hold',
 }
 
+export interface Screenshot {
+  id: number;
+  url: string;
+  position: number;
+}
+
 export interface Title {
   id: number;
   name: string;
@@ -37,4 +43,6 @@ export interface UserTitle {
   updated_at: string;
   title: Title;
   finished_at?: string;
+  screenshots?: Screenshot[];
 }
+

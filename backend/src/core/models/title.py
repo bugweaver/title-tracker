@@ -11,6 +11,7 @@ from .mixins import IntIdPkMixin
 
 if TYPE_CHECKING:
     from .user import User
+    from .screenshot import TitleScreenshot
 
 
 class TitleCategory(str, Enum):
@@ -57,6 +58,13 @@ class UserTitle(IntIdPkMixin, Base):
     # Relationships
     user: Mapped["User"] = relationship("User", backref="user_titles")
     title: Mapped["Title"] = relationship("Title")
+    screenshots: Mapped[list["TitleScreenshot"]] = relationship(
+        "TitleScreenshot",
+        backref="user_title",
+        cascade="all, delete-orphan",
+        order_by="TitleScreenshot.position",
+        lazy="selectin",
+    )
 
     __table_args__ = (
         UniqueConstraint("user_id", "title_id", name="uq_user_title"),

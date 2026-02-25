@@ -76,6 +76,14 @@ class RedisConfig(BaseModel):
         return f"redis://{auth}{self.host}:{self.port}/{self.db}"
 
 
+class S3Config(BaseModel):
+    endpoint_url: str
+    access_key: str
+    secret_key: str
+    bucket_name: str
+    region: str = "nl"
+
+
 class CookieConfig(BaseModel):
     httponly: bool
     secure: bool
@@ -108,6 +116,13 @@ class Settings(BaseSettings):
     # TMDB API
     TMDB_API_KEY: str | None = None
     TMDB_READ_ACCESS_TOKEN: str | None = None
+
+    # S3
+    S3_ENDPOINT_URL: str = ""
+    S3_ACCESS_KEY: str = ""
+    S3_SECRET_KEY: str = ""
+    S3_BUCKET_NAME: str = ""
+    S3_REGION: str = "nl"
 
     COOKIE_HTTPONLY: bool = True
     COOKIE_SECURE: bool = False
@@ -152,6 +167,16 @@ class Settings(BaseSettings):
             httponly=self.COOKIE_HTTPONLY,
             secure=self.COOKIE_SECURE,
             samesite=self.COOKIE_SAMESITE,
+        )
+
+    @property
+    def s3(self) -> S3Config:
+        return S3Config(
+            endpoint_url=self.S3_ENDPOINT_URL,
+            access_key=self.S3_ACCESS_KEY,
+            secret_key=self.S3_SECRET_KEY,
+            bucket_name=self.S3_BUCKET_NAME,
+            region=self.S3_REGION,
         )
 
 

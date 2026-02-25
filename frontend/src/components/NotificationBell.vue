@@ -151,7 +151,7 @@ const categoryIcon = (cat: string) => {
                   подписался на вас
                 </template>
                 <template v-else>
-                  {{ n.type === 'title_updated' ? 'обновил тайтл' : 'добавил тайтл' }}
+                  {{ n.type === 'title_updated' ? ' обновил тайтл' : ' добавил тайтл' }}
                   <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>
                 </template>
               </p>

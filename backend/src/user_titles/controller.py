@@ -10,6 +10,7 @@ from core.models import User, Title, UserTitle, TitleCategory, UserTitleStatus
 from core.models.notification import Notification, NotificationType
 from core.models.user import subscriptions_table
 from core.models.db_helper import get_db_session
+from screenshots.schemas import ScreenshotRead
 from .schemas import AddUserTitleRequest, UserTitleRead
 
 
@@ -133,6 +134,7 @@ class UserTitlesController(Controller):
                 db_session.add_all(notifications)
 
         await db_session.commit()
+        await db_session.refresh(user_title)
 
         return UserTitleRead(
             id=user_title.id,
@@ -141,5 +143,9 @@ class UserTitlesController(Controller):
             status=user_title.status,
             score=user_title.score,
             is_spoiler=user_title.is_spoiler,
-            finished_at=user_title.finished_at
+            finished_at=user_title.finished_at,
+            screenshots=[
+                ScreenshotRead.model_validate(s)
+                for s in user_title.screenshots
+            ],
         )

@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from core.models.title import TitleCategory, UserTitleStatus
+from screenshots.schemas import ScreenshotRead
 
 
 class TitleBase(BaseModel):
@@ -39,6 +40,7 @@ class UserTitleRead(UserTitleBase):
     updated_at: datetime
     finished_at: datetime | None = None
     title: TitleRead
+    screenshots: list[ScreenshotRead] = []
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -49,3 +51,4 @@ class UserTitleCreate(UserTitleBase):
 
 class UserTitleUpdate(UserTitleBase):
     pass
+

@@ -28,11 +28,13 @@ const handleTitleSelect = (title: TitleSearchResult) => {
 };
 
 const selectedInitialData = ref<{
+  userTitleId?: number;
   status: UserTitleStatus;
   score: number | null;
   review_text: string | null;
   is_spoiler?: boolean;
   finished_at?: string | null;
+  screenshots?: { id: number; url: string; position: number }[];
 } | null>(null);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,11 +50,13 @@ const handleEditTitle = (userTitle: any) => {
   };
   
   selectedInitialData.value = {
+    userTitleId: userTitle.id,
     status: userTitle.status,
     score: userTitle.score,
     review_text: userTitle.review_text,
     is_spoiler: userTitle.is_spoiler,
     finished_at: userTitle.finished_at,
+    screenshots: userTitle.screenshots || [],
   };
   
   isReviewModalOpen.value = true;

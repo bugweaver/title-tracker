@@ -52,6 +52,19 @@ const fetchEntry = async () => {
 
 onMounted(fetchEntry);
 
+// Lightbox
+const lightboxOpen = ref(false);
+const lightboxIndex = ref(0);
+
+const openLightbox = (idx: number) => {
+  lightboxIndex.value = idx;
+  lightboxOpen.value = true;
+};
+
+const closeLightbox = () => {
+  lightboxOpen.value = false;
+};
+
 const categoryLabel = (cat: string) => {
   switch (cat) {
     case 'game': return 'Игра';
@@ -182,7 +195,48 @@ const formatDate = (dateStr: string | null | undefined) => {
         <div v-else class="no-review">
           Отзыв не оставлен
         </div>
+
+        <!-- Screenshots gallery -->
+        <div v-if="entry.screenshots && entry.screenshots.length > 0" class="screenshots-section">
+          <h2 class="section-title">Скриншоты</h2>
+          <div class="screenshots-grid">
+            <div 
+              v-for="(screenshot, idx) in entry.screenshots" 
+              :key="screenshot.id"
+              class="screenshot-thumb"
+              @click="openLightbox(idx)"
+            >
+              <img :src="screenshot.url" :alt="`Скриншот ${idx + 1}`" />
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div 
+      v-if="lightboxOpen" 
+      class="lightbox-overlay"
+      @click="closeLightbox"
+    >
+      <button class="lightbox-close" @click.stop="closeLightbox">✕</button>
+      <button 
+        v-if="lightboxIndex > 0" 
+        class="lightbox-nav lightbox-prev" 
+        @click.stop="lightboxIndex--"
+      >‹</button>
+      <div class="lightbox-content" @click.stop>
+        <img 
+          v-if="entry?.screenshots?.[lightboxIndex]" 
+          :src="entry.screenshots![lightboxIndex]!.url" 
+          class="lightbox-img"
+        />
+      </div>
+      <button 
+        v-if="entry?.screenshots && lightboxIndex < entry.screenshots.length - 1" 
+        class="lightbox-nav lightbox-next" 
+        @click.stop="lightboxIndex++"
+      >›</button>
     </div>
 
     <!-- Error / not found -->
@@ -497,5 +551,121 @@ const formatDate = (dateStr: string | null | undefined) => {
   .detail-cards {
     flex-direction: column;
   }
+}
+
+/* Screenshots */
+.screenshots-section {
+  padding: 20px;
+  margin-top: 8px;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.screenshots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.screenshot-thumb {
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 16/9;
+  background: var(--color-surface-hover);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.screenshot-thumb:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.screenshot-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Lightbox */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 101;
+}
+
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 101;
+}
+
+.lightbox-nav:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.lightbox-prev {
+  left: 16px;
+}
+
+.lightbox-next {
+  right: 16px;
+}
+
+.lightbox-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
 }
 </style>

@@ -3,6 +3,12 @@ import type { UserTitle } from '@/entities/title';
 
 export type TitleType = 'game' | 'movie' | 'tv' | 'anime';
 
+export interface Screenshot {
+  id: number;
+  url: string;
+  position: number;
+}
+
 export interface TitleSearchResult {
   external_id: string; // Changed from id
   title: string;       // Changed from name
@@ -32,8 +38,17 @@ export const titlesApi = {
     apiClient.get<TitleSearchResult[]>(`/search?q=${encodeURIComponent(query)}&type=${type}`),
 
   add: (data: AddUserTitleRequest) =>
-    apiClient.post('/user-titles', data),
+    apiClient.post<{ id: number }>('/user-titles', data),
     
   getUserTitles: (userId: number) =>
     apiClient.get<UserTitle[]>(`/titles/user/${userId}`),
+
+  uploadScreenshot: (userTitleId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('data', file);
+    return apiClient.postFormData<Screenshot>(`/screenshots/upload/${userTitleId}`, formData);
+  },
+
+  deleteScreenshot: (screenshotId: number) =>
+    apiClient.delete(`/screenshots/${screenshotId}`),
 };
