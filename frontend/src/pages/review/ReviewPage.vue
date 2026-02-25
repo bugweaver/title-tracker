@@ -213,7 +213,15 @@ const formatDate = (dateStr: string | null | undefined) => {
       </div>
     </div>
 
-    <!-- Lightbox -->
+    <!-- Error / not found -->
+    <div v-else class="error-container">
+      <p>Запись не найдена</p>
+      <button @click="$router.back()" class="back-btn">Назад</button>
+    </div>
+  </div>
+
+  <!-- Lightbox (Teleported to body to avoid z-index issues) -->
+  <Teleport to="body">
     <div 
       v-if="lightboxOpen" 
       class="lightbox-overlay"
@@ -238,13 +246,7 @@ const formatDate = (dateStr: string | null | undefined) => {
         @click.stop="lightboxIndex++"
       >›</button>
     </div>
-
-    <!-- Error / not found -->
-    <div v-else class="error-container">
-      <p>Запись не найдена</p>
-      <button @click="$router.back()" class="back-btn">Назад</button>
-    </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
