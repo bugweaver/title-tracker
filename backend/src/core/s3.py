@@ -38,13 +38,17 @@ class S3Service:
         content_type: str,
     ) -> str:
         async with self._session.client(**self._get_client_kwargs()) as s3:
-            await s3.put_object(
-                Bucket=self._config.bucket_name,
-                Key=key,
-                Body=file_content,
-                ContentType=content_type,
-                ACL="public-read",
-            )
+            try:
+                await s3.put_object(
+                    Bucket=self._config.bucket_name,
+                    Key=key,
+                    Body=file_content,
+                    ContentType=content_type,
+                    ACL="public-read",
+                )
+            except Exception as e:
+                logger.exception("S3 upload failed")
+                raise RuntimeError(f"Не удалось загрузить файл в S3: {str(e)}")
 
         url = f"{self._config.endpoint_url}/{self._config.bucket_name}/{key}"
         logger.info("Uploaded %s -> %s", key, url)
