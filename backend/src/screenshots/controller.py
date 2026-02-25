@@ -70,7 +70,7 @@ class ScreenshotsController(Controller):
         content_type = data.content_type or "application/octet-stream"
         if content_type not in ALLOWED_CONTENT_TYPES:
             raise ClientException(
-                detail=f"Неподдерживаемый формат. Допустимые: JPEG, PNG, WebP, GIF",
+                detail="Неподдерживаемый формат. Допустимые: JPEG, PNG, WebP, GIF",
                 status_code=400,
             )
 
