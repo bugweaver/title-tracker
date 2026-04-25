@@ -3,7 +3,9 @@ import { ref, computed, watch } from 'vue';
 import AppButton from '@/shared/ui/AppButton.vue';
 import AppSelect from '@/shared/ui/AppSelect.vue';
 import { type TitleSearchResult, titlesApi, type Screenshot } from '@/shared/api/titles';
-import { UserTitleStatus } from '@/entities/title';
+import { UserTitleStatus, useTitleStore } from '@/entities/title';
+
+const titleStore = useTitleStore();
 
 const props = defineProps<{
   isOpen: boolean;
@@ -30,6 +32,8 @@ const review = ref('');
 const selectedYear = ref<number | null>(null);
 const selectedMonth = ref<number | null>(null);
 const isSubmitting = ref(false);
+const isDeleting = ref(false);
+const showDeleteConfirm = ref(false);
 
 // Screenshots
 const pendingFiles = ref<File[]>([]);
@@ -67,6 +71,7 @@ watch(() => props.isOpen, (isOpen) => {
     // Always reset pending state
     pendingFiles.value = [];
     pendingPreviews.value = [];
+    showDeleteConfirm.value = false;
     deletedScreenshotIds.value = [];
   }
 });
@@ -298,6 +303,22 @@ const handleSubmit = async () => {
     isUploadingScreenshots.value = false;
   }
 };
+
+const handleDelete = async () => {
+  if (!props.initialData?.userTitleId) return;
+
+  isDeleting.value = true;
+  try {
+    await titleStore.deleteTitle(props.initialData.userTitleId);
+    emit('added');
+    emit('close');
+  } catch (error) {
+    console.error('Failed to delete title:', error);
+  } finally {
+    isDeleting.value = false;
+    showDeleteConfirm.value = false;
+  }
+};
 </script>
 
 <template>
@@ -519,11 +540,49 @@ const handleSubmit = async () => {
       </div>
 
       <!-- Footer -->
-      <div class="p-4 border-t border-zinc-800 flex justify-end gap-3 bg-zinc-900">
-        <AppButton variant="ghost" @click="$emit('close')">Отмена</AppButton>
-        <AppButton :loading="isSubmitting || isUploadingScreenshots" @click="handleSubmit">
-          {{ isUploadingScreenshots ? 'Загрузка...' : 'Добавить' }}
-        </AppButton>
+      <!-- Footer: Delete confirmation -->
+      <div v-if="showDeleteConfirm" class="p-4 border-t border-red-500/30 bg-red-500/5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            </svg>
+          </div>
+          <p class="text-sm text-zinc-300">Тайтл, оценка, отзыв и скриншоты будут удалены безвозвратно.</p>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button
+            @click="showDeleteConfirm = false"
+            :disabled="isDeleting"
+            class="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors cursor-pointer"
+          >Отмена</button>
+          <button
+            @click="handleDelete"
+            :disabled="isDeleting"
+            class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
+          >
+            <svg v-if="isDeleting" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            {{ isDeleting ? 'Удаление...' : 'Да, удалить' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer: Normal -->
+      <div v-else class="p-4 border-t border-zinc-800 flex justify-between bg-zinc-900">
+        <div>
+          <button
+            v-if="initialData?.userTitleId"
+            @click="showDeleteConfirm = true"
+            class="px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+          >Удалить</button>
+        </div>
+        <div class="flex gap-3">
+          <AppButton variant="ghost" @click="$emit('close')">Отмена</AppButton>
+          <AppButton :loading="isSubmitting || isUploadingScreenshots" @click="handleSubmit">
+            {{ isUploadingScreenshots ? 'Загрузка...' : 'Добавить' }}
+          </AppButton>
+        </div>
       </div>
     
     </div>

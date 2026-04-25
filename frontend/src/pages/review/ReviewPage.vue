@@ -94,15 +94,22 @@ const categoryIcon = (cat: string) => {
   }
 };
 
-const statusLabel = (status: string) => {
+const statusLabel = (status: string, category?: string) => {
   switch (status) {
-    case 'completed': return 'Пройдено';
-    case 'playing': return 'Играю';
-    case 'watching': return 'Смотрю';
-    case 'dropped': return 'Дропнуто';
-    case 'planned': return 'В планах';
-    case 'on_hold': return 'На паузе';
-    default: return status;
+    case 'completed':
+      return category === 'game' ? 'Пройдено' : 'Просмотрено';
+    case 'playing': 
+      return 'Играю';
+    case 'watching': 
+      return 'Смотрю';
+    case 'dropped': 
+      return 'Дропнуто';
+    case 'planned': 
+      return 'В планах';
+    case 'on_hold': 
+      return 'На паузе';
+    default: 
+      return status;
   }
 };
 
@@ -169,7 +176,7 @@ const formatDate = (dateStr: string | null | undefined) => {
         <div class="detail-cards">
           <div class="detail-card">
             <span class="detail-label">Статус</span>
-            <span class="detail-value">{{ statusLabel(entry.status) }}</span>
+            <span class="detail-value">{{ statusLabel(entry.status, entry.title.category) }}</span>
           </div>
           <div class="detail-card" v-if="entry.score">
             <span class="detail-label">Оценка</span>

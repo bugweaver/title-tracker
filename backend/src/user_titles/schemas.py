@@ -11,7 +11,7 @@ from screenshots.schemas import ScreenshotRead
 class AddUserTitleRequest(BaseModel):
     # External Data
     external_id: str
-    type: Literal["game", "movie", "tv", "anime"]
+    type: Literal["game", "movie", "tv", "series", "anime"]
     name: str
     cover_url: str | None = None
     release_year: int | None = None

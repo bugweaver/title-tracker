@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { apiClient } from '@/shared/api';
+import { titlesApi } from '@/shared/api/titles';
 import type { UserTitle } from './types';
 import { TitleCategory, UserTitleStatus } from './types';
 
@@ -21,6 +22,11 @@ export const useTitleStore = defineStore('title', () => {
     } finally {
       isLoading.value = false;
     }
+  };
+
+  const deleteTitle = async (userTitleId: number) => {
+    await titlesApi.deleteUserTitle(userTitleId);
+    titles.value = titles.value.filter(t => t.id !== userTitleId);
   };
 
   const getTitlesByCategory = (category: TitleCategory) => {
@@ -60,6 +66,7 @@ export const useTitleStore = defineStore('title', () => {
     isLoading,
     error,
     fetchMyTitles,
+    deleteTitle,
     getTitlesByCategory,
     getTitlesByStatus,
     getCountByStatus

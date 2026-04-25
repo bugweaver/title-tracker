@@ -51,4 +51,7 @@ export const titlesApi = {
 
   deleteScreenshot: (screenshotId: number) =>
     apiClient.delete(`/screenshots/${screenshotId}`),
+
+  deleteUserTitle: (userTitleId: number) =>
+    apiClient.delete(`/user-titles/${userTitleId}`),
 };

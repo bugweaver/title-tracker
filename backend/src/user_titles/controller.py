@@ -1,8 +1,9 @@
 from typing import Any
 from datetime import datetime
 
-from litestar import Controller, post, Request
+from litestar import Controller, post, delete, Request
 from litestar.di import Provide
+from litestar.exceptions import NotFoundException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +42,7 @@ class UserTitlesController(Controller):
                 "game": TitleCategory.GAME,
                 "movie": TitleCategory.MOVIE,
                 "tv": TitleCategory.SERIES,
+                "series": TitleCategory.SERIES,
                 "anime": TitleCategory.ANIME
             }
             category = category_map.get(data.type, TitleCategory.GAME)
@@ -149,3 +151,22 @@ class UserTitlesController(Controller):
                 for s in user_title.screenshots
             ],
         )
+
+    @delete("/{user_title_id:int}", status_code=204)
+    async def delete_user_title(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        db_session: AsyncSession,
+    ) -> None:
+        """Delete a title from the current user's list."""
+        stmt = select(UserTitle).where(UserTitle.id == user_title_id)
+        result = await db_session.execute(stmt)
+        user_title = result.scalar_one_or_none()
+
+        if not user_title or user_title.user_id != request.user.id:
+            raise NotFoundException(detail="Title not found")
+
+        await db_session.delete(user_title)
+        await db_session.commit()
+
