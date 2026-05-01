@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, type CSSProperties } from 'vue';
 import { useRoute } from 'vue-router';
 import { apiClient } from '@/shared/api';
 import type { UserTitle } from '@/entities/title';
@@ -113,13 +113,33 @@ const statusLabel = (status: string, category?: string) => {
   }
 };
 
-const scoreColor = (score: number | null) => {
-  if (!score) return 'var(--color-text-muted)';
-  if (score >= 8) return '#22c55e';
-  if (score >= 6) return '#eab308';
-  if (score >= 4) return '#f97316';
-  return '#ef4444';
-};
+const interpolateColor = (
+  from: [number, number, number],
+  to: [number, number, number],
+  amount: number,
+): [number, number, number] => [
+  Math.round(from[0] + (to[0] - from[0]) * amount),
+  Math.round(from[1] + (to[1] - from[1]) * amount),
+  Math.round(from[2] + (to[2] - from[2]) * amount),
+];
+
+const scoreToneRgb = computed<[number, number, number]>(() => {
+  const score = entry.value?.score;
+  if (!score) return [113, 113, 122];
+
+  const normalizedScore = Math.min(10, Math.max(1, score));
+  if (normalizedScore <= 5) {
+    return interpolateColor([239, 68, 68], [245, 158, 11], (normalizedScore - 1) / 4);
+  }
+
+  return interpolateColor([245, 158, 11], [16, 185, 129], (normalizedScore - 5) / 5);
+});
+
+const reviewToneStyle = computed<CSSProperties>(() => ({
+  '--review-tone-rgb': scoreToneRgb.value.join(' '),
+} as CSSProperties));
+
+const scoreColor = (score: number | null) => score ? 'rgb(var(--review-tone-rgb))' : 'var(--color-text-muted)';
 
 const formatDate = (dateStr: string | null | undefined) => {
   if (!dateStr) return null;
@@ -139,9 +159,9 @@ const formatDate = (dateStr: string | null | undefined) => {
     </div>
 
     <!-- Content -->
-    <div v-else-if="entry" class="review-container">
+    <div v-else-if="entry" class="review-container" :style="reviewToneStyle">
       <!-- Hero section with cover -->
-      <div class="review-hero">
+      <div class="review-hero review-accent-card">
         <div class="cover-wrapper" v-if="entry.title.cover_image">
           <img :src="entry.title.cover_image" :alt="entry.title.name" class="cover-img" />
         </div>
@@ -160,7 +180,7 @@ const formatDate = (dateStr: string | null | undefined) => {
       </div>
 
       <!-- Author card -->
-      <div class="author-card" v-if="author" @click="$router.push(`/user/${author.id}`)">
+      <div class="author-card review-accent-card" v-if="author" @click="$router.push(`/user/${author.id}`)">
         <div class="author-avatar">
           <img v-if="author.avatar_url" :src="author.avatar_url" alt="" class="avatar-img" />
           <span v-else class="avatar-placeholder">{{ author.login.substring(0, 1).toUpperCase() }}</span>
@@ -174,24 +194,24 @@ const formatDate = (dateStr: string | null | undefined) => {
       <!-- Review details -->
       <div class="review-details">
         <div class="detail-cards">
-          <div class="detail-card">
+          <div class="detail-card review-accent-card">
             <span class="detail-label">Статус</span>
             <span class="detail-value">{{ statusLabel(entry.status, entry.title.category) }}</span>
           </div>
-          <div class="detail-card" v-if="entry.score">
+          <div class="detail-card review-accent-card score-card" v-if="entry.score">
             <span class="detail-label">Оценка</span>
             <span class="detail-value score" :style="{ color: scoreColor(entry.score) }">
               {{ entry.score }}/10
             </span>
           </div>
-          <div class="detail-card" v-if="entry.finished_at">
+          <div class="detail-card review-accent-card" v-if="entry.finished_at">
             <span class="detail-label">Дата завершения</span>
             <span class="detail-value">{{ formatDate(entry.finished_at) }}</span>
           </div>
         </div>
 
         <!-- Review text -->
-        <div v-if="entry.review_text" class="review-text-section">
+        <div v-if="entry.review_text" class="review-text-section review-accent-card">
           <h2 class="section-title">Отзыв</h2>
           <div class="review-text">
             <span
@@ -208,12 +228,12 @@ const formatDate = (dateStr: string | null | undefined) => {
           </div>
         </div>
 
-        <div v-else class="no-review">
+        <div v-else class="no-review review-accent-card">
           Отзыв не оставлен
         </div>
 
         <!-- Screenshots gallery -->
-        <div v-if="entry.screenshots && entry.screenshots.length > 0" class="screenshots-section">
+        <div v-if="entry.screenshots && entry.screenshots.length > 0" class="screenshots-section review-accent-card">
           <h2 class="section-title">Скриншоты</h2>
           <div class="screenshots-grid">
             <div 
@@ -297,14 +317,52 @@ const formatDate = (dateStr: string | null | undefined) => {
   gap: 24px;
 }
 
+:global(:root),
+:global([data-theme="light"]) {
+  --review-card-tint: 5%;
+  --review-card-tint-strong: 8%;
+  --review-card-border: 22%;
+  --review-card-shadow: 0.08;
+  --review-badge-tint: 10%;
+}
+
+:global([data-theme="dark"]) {
+  --review-card-tint: 8%;
+  --review-card-tint-strong: 12%;
+  --review-card-border: 28%;
+  --review-card-shadow: 0.18;
+  --review-badge-tint: 14%;
+}
+
+:global([data-theme="midnight"]) {
+  --review-card-tint: 10%;
+  --review-card-tint-strong: 14%;
+  --review-card-border: 32%;
+  --review-card-shadow: 0.2;
+  --review-badge-tint: 16%;
+}
+
+.review-accent-card {
+  background:
+    linear-gradient(135deg, rgb(var(--review-tone-rgb) / var(--review-card-overlay, 0.08)), transparent 58%),
+    color-mix(in srgb, rgb(var(--review-tone-rgb)) var(--review-card-tint), var(--color-background-soft));
+  border: 1px solid color-mix(in srgb, rgb(var(--review-tone-rgb)) var(--review-card-border), var(--color-border));
+  box-shadow: 0 12px 32px rgb(var(--review-tone-rgb) / var(--review-card-shadow));
+  transition:
+    background 450ms ease,
+    background-color 450ms ease,
+    border-color 450ms ease,
+    box-shadow 450ms ease,
+    color 250ms ease;
+}
+
 /* Hero */
 .review-hero {
   display: flex;
   gap: 24px;
   padding: 24px;
-  background: var(--color-background-soft);
-  border: 1px solid var(--color-border);
   border-radius: 16px;
+  --review-card-overlay: 0.1;
 }
 
 .cover-wrapper {
@@ -333,11 +391,12 @@ const formatDate = (dateStr: string | null | undefined) => {
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: var(--color-text-muted);
-  background: var(--color-surface-hover);
+  color: rgb(var(--review-tone-rgb));
+  background: color-mix(in srgb, rgb(var(--review-tone-rgb)) var(--review-badge-tint), var(--color-surface-hover));
   padding: 4px 10px;
   border-radius: 6px;
   width: fit-content;
+  transition: background-color 450ms ease, color 450ms ease;
 }
 
 .title-name {
@@ -362,9 +421,10 @@ const formatDate = (dateStr: string | null | undefined) => {
 .genre-tag {
   font-size: 12px;
   padding: 3px 8px;
-  background: var(--color-primary-500-10, rgba(99,102,241,0.1));
-  color: var(--color-primary-500);
+  background: color-mix(in srgb, rgb(var(--review-tone-rgb)) var(--review-badge-tint), transparent);
+  color: rgb(var(--review-tone-rgb));
   border-radius: 4px;
+  transition: background-color 450ms ease, color 450ms ease;
 }
 
 /* Author */
@@ -373,15 +433,13 @@ const formatDate = (dateStr: string | null | undefined) => {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: var(--color-background-soft);
-  border: 1px solid var(--color-border);
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.2s;
+  --review-card-overlay: 0.05;
 }
 
 .author-card:hover {
-  border-color: var(--color-primary-500);
+  border-color: rgb(var(--review-tone-rgb));
 }
 
 .author-avatar {
@@ -389,11 +447,12 @@ const formatDate = (dateStr: string | null | undefined) => {
   height: 44px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--color-primary-100);
+  background: color-mix(in srgb, rgb(var(--review-tone-rgb)) 42%, var(--color-surface-hover));
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: background-color 450ms ease;
 }
 
 .avatar-img {
@@ -405,7 +464,7 @@ const formatDate = (dateStr: string | null | undefined) => {
 .avatar-placeholder {
   font-size: 18px;
   font-weight: 700;
-  color: var(--color-primary-600);
+  color: white;
 }
 
 .author-info {
@@ -441,12 +500,16 @@ const formatDate = (dateStr: string | null | undefined) => {
   flex: 1;
   min-width: 120px;
   padding: 16px;
-  background: var(--color-background-soft);
-  border: 1px solid var(--color-border);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  --review-card-overlay: 0.05;
+}
+
+.detail-card.score-card {
+  --review-card-tint: var(--review-card-tint-strong);
+  --review-card-overlay: 0.1;
 }
 
 .detail-label {
@@ -477,9 +540,8 @@ const formatDate = (dateStr: string | null | undefined) => {
 
 .review-text-section {
   padding: 20px;
-  background: var(--color-background-soft);
-  border: 1px solid var(--color-border);
   border-radius: 12px;
+  --review-card-overlay: 0.04;
 }
 
 .review-text {
@@ -518,9 +580,8 @@ const formatDate = (dateStr: string | null | undefined) => {
   text-align: center;
   color: var(--color-text-muted);
   font-size: 14px;
-  background: var(--color-background-soft);
-  border: 1px solid var(--color-border);
   border-radius: 12px;
+  --review-card-overlay: 0.04;
 }
 
 .error-container {
@@ -575,9 +636,8 @@ const formatDate = (dateStr: string | null | undefined) => {
 .screenshots-section {
   padding: 20px;
   margin-top: 8px;
-  background: var(--color-background-soft);
-  border: 1px solid var(--color-border);
   border-radius: 12px;
+  --review-card-overlay: 0.04;
 }
 
 .screenshots-grid {

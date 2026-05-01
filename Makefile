@@ -40,9 +40,9 @@ shell-backend:
 shell-db:
 	docker compose $(COMPOSE_DEV) exec db psql -U bugweaver -d title_tracker
 
-# Create two default users (bugweaver, alice)
+# Create a user (usage: make create-users ARGS="--login user --email user@example.com --name Name --password password")
 create-users:
-	docker compose $(COMPOSE_DEV) exec backend python src/scripts/create_users.py
+	docker compose $(COMPOSE_DEV) exec backend python src/scripts/create_users.py $(ARGS)
 
 # --- CI/CD & Local Development Helpers ---
 

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/entities/user'
+import { TITLE_CATEGORY_ROUTE_PATTERN, TITLE_STATUS_ROUTE_PATTERN } from '@/entities/title'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -28,7 +29,7 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
-      path: '/my-titles',
+      path: `/my-titles/:category(${TITLE_CATEGORY_ROUTE_PATTERN})?/:status(${TITLE_STATUS_ROUTE_PATTERN})?`,
       name: 'my-titles',
       component: () => import('@/pages/my-titles').then(m => m.MyTitlesPage),
       meta: { requiresAuth: true },
@@ -37,12 +38,6 @@ const router = createRouter({
       path: '/community',
       name: 'community',
       component: () => import('@/pages/community').then(m => m.CommunityPage),
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/user/:id',
-      name: 'user-profile',
-      component: () => import('@/pages/user-titles').then(m => m.UserTitlesPage),
       meta: { requiresAuth: true },
     },
     {
@@ -61,6 +56,12 @@ const router = createRouter({
       path: '/user/:id/connections',
       name: 'connections',
       component: () => import('@/pages/connections/ConnectionsPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: `/user/:id/:category(${TITLE_CATEGORY_ROUTE_PATTERN})?/:status(${TITLE_STATUS_ROUTE_PATTERN})?`,
+      name: 'user-profile',
+      component: () => import('@/pages/user-titles').then(m => m.UserTitlesPage),
       meta: { requiresAuth: true },
     },
   ],

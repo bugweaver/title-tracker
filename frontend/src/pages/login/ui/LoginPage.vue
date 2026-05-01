@@ -13,7 +13,7 @@ import { LoginForm } from '@/features/auth';
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: calc(100dvh - 4rem);
   padding: 2rem;
 }
 </style>

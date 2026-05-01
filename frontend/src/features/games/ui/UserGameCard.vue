@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted, type CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import { type UserTitleStatus, type Screenshot } from '@/entities/title';
 import { TitleCategory } from '@/entities/title';
@@ -41,6 +41,32 @@ const score = computed(() => {
   if (props.userTitle.score === null) return null;
   return props.userTitle.score === 10 ? '10' : props.userTitle.score.toFixed(1);
 });
+
+const interpolateColor = (
+  from: [number, number, number],
+  to: [number, number, number],
+  amount: number,
+): [number, number, number] => [
+  Math.round(from[0] + (to[0] - from[0]) * amount),
+  Math.round(from[1] + (to[1] - from[1]) * amount),
+  Math.round(from[2] + (to[2] - from[2]) * amount),
+];
+
+const cardToneRgb = computed<[number, number, number]>(() => {
+  const scoreValue = props.userTitle.score;
+  if (!scoreValue) return [113, 113, 122];
+
+  const normalizedScore = Math.min(10, Math.max(1, scoreValue));
+  if (normalizedScore <= 5) {
+    return interpolateColor([239, 68, 68], [245, 158, 11], (normalizedScore - 1) / 4);
+  }
+
+  return interpolateColor([245, 158, 11], [16, 185, 129], (normalizedScore - 5) / 5);
+});
+
+const cardToneStyle = computed<CSSProperties>(() => ({
+  '--card-tone-rgb': cardToneRgb.value.join(' '),
+} as CSSProperties));
 
 const statusLabel = computed(() => {
     // Basic mapping, can be moved to shared helper if needed
@@ -140,15 +166,14 @@ const onLightboxKeydown = (e: KeyboardEvent) => {
   if (e.key === 'ArrowRight' && lightboxIndex.value < screenshots.length - 1) lightboxIndex.value++;
   if (e.key === 'ArrowLeft' && lightboxIndex.value > 0) lightboxIndex.value--;
 };
-
-import { onMounted, onUnmounted } from 'vue';
 onMounted(() => window.addEventListener('keydown', onLightboxKeydown));
 onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
 </script>
 
 <template>
   <div 
-    class="game-card flex gap-5 p-5 bg-[var(--color-bg-primary)] border border-[var(--color-border-primary)] rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer"
+    class="game-card flex gap-5 p-5 rounded-xl cursor-pointer"
+    :style="cardToneStyle"
     @click="goToReview"
   >
     <!-- Poster -->
@@ -171,7 +196,7 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
       <div class="flex items-center gap-3 mb-2">
         <span 
           v-if="score"
-          class="px-2.5 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-md font-bold text-sm border border-[var(--color-border-primary)]"
+          class="score-badge px-2.5 py-1 rounded-md font-bold text-sm"
         >
           ★ {{ score }}
         </span>
@@ -244,7 +269,7 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
         <div 
           v-for="(screenshot, idx) in userTitle.screenshots.slice(0, 4)" 
           :key="screenshot.id"
-          class="w-16 h-12 rounded-md overflow-hidden bg-[var(--color-bg-tertiary)] flex-shrink-0 relative cursor-pointer hover:ring-2 hover:ring-[var(--color-primary-500)] transition-all"
+          class="screenshot-chip w-16 h-12 rounded-md overflow-hidden flex-shrink-0 relative cursor-pointer hover:ring-2 transition-all"
           @click="openLightbox(idx)"
         >
           <img :src="screenshot.url" class="w-full h-full object-cover" />
@@ -289,6 +314,64 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
 </template>
 
 <style scoped>
+:global(:root),
+:global([data-theme="light"]) {
+  --game-card-tint: 5%;
+  --game-card-overlay: 0.08;
+  --game-card-border: 24%;
+  --game-card-shadow: 0.08;
+  --game-card-badge-tint: 10%;
+}
+
+:global([data-theme="dark"]) {
+  --game-card-tint: 8%;
+  --game-card-overlay: 0.12;
+  --game-card-border: 30%;
+  --game-card-shadow: 0.16;
+  --game-card-badge-tint: 14%;
+}
+
+:global([data-theme="midnight"]) {
+  --game-card-tint: 10%;
+  --game-card-overlay: 0.14;
+  --game-card-border: 34%;
+  --game-card-shadow: 0.18;
+  --game-card-badge-tint: 16%;
+}
+
+.game-card {
+  background:
+    linear-gradient(135deg, rgb(var(--card-tone-rgb) / var(--game-card-overlay)), transparent 58%),
+    color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-tint), var(--color-background-soft));
+  border: 1px solid color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-border), var(--color-border));
+  box-shadow: 0 12px 32px rgb(var(--card-tone-rgb) / var(--game-card-shadow));
+  transition:
+    background 450ms ease,
+    border-color 450ms ease,
+    box-shadow 450ms ease,
+    transform 250ms ease;
+}
+
+.game-card:hover {
+  border-color: rgb(var(--card-tone-rgb));
+  box-shadow: 0 16px 40px rgb(var(--card-tone-rgb) / calc(var(--game-card-shadow) + 0.08));
+}
+
+.score-badge {
+  color: rgb(var(--card-tone-rgb));
+  background: color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-badge-tint), var(--color-surface-hover));
+  border: 1px solid color-mix(in srgb, rgb(var(--card-tone-rgb)) 34%, var(--color-border));
+  transition: background-color 450ms ease, border-color 450ms ease, color 450ms ease;
+}
+
+.screenshot-chip {
+  background: color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-badge-tint), var(--color-surface-hover));
+}
+
+.screenshot-chip:hover {
+  --tw-ring-color: rgb(var(--card-tone-rgb));
+}
+
 .spoiler-hidden {
   background: #3f3f46;
   color: transparent;
@@ -303,10 +386,6 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   background: rgba(239, 68, 68, 0.1);
   color: var(--color-text-primary);
   transition: all 0.2s;
-}
-
-.game-card:hover {
-  border-color: var(--color-primary-500);
 }
 
 /* Lightbox */

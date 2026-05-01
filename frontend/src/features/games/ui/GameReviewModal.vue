@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import AppButton from '@/shared/ui/AppButton.vue';
-import AppSelect from '@/shared/ui/AppSelect.vue';
+import { ref, computed, watch, type CSSProperties } from 'vue';
 import { type TitleSearchResult, titlesApi, type Screenshot } from '@/shared/api/titles';
 import { UserTitleStatus, useTitleStore } from '@/entities/title';
+import GameReviewCompletionDate from './GameReviewCompletionDate.vue';
+import GameReviewFooter from './GameReviewFooter.vue';
+import GameReviewHeader from './GameReviewHeader.vue';
+import GameReviewRating from './GameReviewRating.vue';
+import GameReviewScreenshots from './GameReviewScreenshots.vue';
+import GameReviewStatusSelector from './GameReviewStatusSelector.vue';
+import GameReviewTextArea from './GameReviewTextArea.vue';
+import ImageLightbox from './ImageLightbox.vue';
 
 const titleStore = useTitleStore();
 
@@ -35,7 +41,6 @@ const isSubmitting = ref(false);
 const isDeleting = ref(false);
 const showDeleteConfirm = ref(false);
 
-// Screenshots
 const pendingFiles = ref<File[]>([]);
 const pendingPreviews = ref<string[]>([]);
 const existingScreenshots = ref<Screenshot[]>([]);
@@ -59,7 +64,6 @@ watch(() => props.isOpen, (isOpen) => {
         selectedMonth.value = null;
       }
     } else {
-      // Reset
       status.value = UserTitleStatus.COMPLETED;
       rating.value = 0;
       review.value = '';
@@ -68,7 +72,7 @@ watch(() => props.isOpen, (isOpen) => {
       selectedYear.value = now.getFullYear();
       selectedMonth.value = now.getMonth();
     }
-    // Always reset pending state
+
     pendingFiles.value = [];
     pendingPreviews.value = [];
     showDeleteConfirm.value = false;
@@ -85,7 +89,7 @@ const canAddMore = computed(() => totalScreenshots.value < MAX_SCREENSHOTS);
 const statuses = computed(() => {
   const isGame = props.title?.type === 'game';
   const isMovie = props.title?.type === 'movie';
-  
+
   return [
     { id: UserTitleStatus.COMPLETED, label: isGame ? 'Прошел' : 'Посмотрел' },
     ...(!isMovie ? [{ id: isGame ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING, label: isGame ? 'Играю' : 'Смотрю' }] : []),
@@ -102,6 +106,34 @@ const emoji = computed(() => {
   if (rating.value >= 3) return '😕';
   return '💩';
 });
+
+const interpolateColor = (
+  from: [number, number, number],
+  to: [number, number, number],
+  amount: number,
+): [number, number, number] => [
+  Math.round(from[0] + (to[0] - from[0]) * amount),
+  Math.round(from[1] + (to[1] - from[1]) * amount),
+  Math.round(from[2] + (to[2] - from[2]) * amount),
+];
+
+const ratingToneRgb = computed(() => {
+  if (status.value === UserTitleStatus.PLANNED || rating.value <= 0) {
+    return [113, 113, 122];
+  }
+
+  const score = Math.min(10, Math.max(1, rating.value));
+
+  if (score <= 5) {
+    return interpolateColor([239, 68, 68], [245, 158, 11], (score - 1) / 4);
+  }
+
+  return interpolateColor([245, 158, 11], [16, 185, 129], (score - 5) / 5);
+});
+
+const reviewToneStyle = computed<CSSProperties>(() => ({
+  '--review-tone-rgb': ratingToneRgb.value.join(' '),
+} as CSSProperties));
 
 const monthOptions = [
   { value: 0, label: 'Январь' },
@@ -128,83 +160,17 @@ const yearOptions = computed(() => {
   return years;
 });
 
-const textareaRef = ref<HTMLTextAreaElement | null>(null);
-const insertSpoiler = () => {
-  if (!textareaRef.value) return;
-  
-  const el = textareaRef.value;
-  const start = el.selectionStart;
-  const end = el.selectionEnd;
-  const text = review.value;
-  
-  const before = text.substring(0, start);
-  const selection = text.substring(start, end);
-  const after = text.substring(end);
-  
-  review.value = before + '<' + (selection || 'спойлер') + '>' + after;
-  
-  setTimeout(() => {
-    el.focus();
-    const newCursorPos = start + 1 + (selection.length || 7) + 1;
-    el.setSelectionRange(newCursorPos, newCursorPos);
-  }, 0);
-};
-
-// Screenshot handlers
-const fileInputRef = ref<HTMLInputElement | null>(null);
-
-const openFileDialog = () => {
-  fileInputRef.value?.click();
-};
-
-const onFileSelected = (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  if (!input.files) return;
-  
-  const files = Array.from(input.files);
+const addScreenshotFiles = (files: File[]) => {
   const availableSlots = MAX_SCREENSHOTS - totalScreenshots.value;
   const filesToAdd = files.slice(0, availableSlots);
-  
-  for (const file of filesToAdd) {
-    if (file.size > 5 * 1024 * 1024) continue; // Skip > 5MB
-    if (!file.type.startsWith('image/')) continue;
-    
-    pendingFiles.value.push(file);
-    pendingPreviews.value.push(URL.createObjectURL(file));
-  }
-  
-  // Reset input
-  input.value = '';
-};
 
-const onDrop = (event: DragEvent) => {
-  event.preventDefault();
-  isDragging.value = false;
-  
-  if (!event.dataTransfer?.files) return;
-  
-  const files = Array.from(event.dataTransfer.files);
-  const availableSlots = MAX_SCREENSHOTS - totalScreenshots.value;
-  const filesToAdd = files.slice(0, availableSlots);
-  
   for (const file of filesToAdd) {
     if (file.size > 5 * 1024 * 1024) continue;
     if (!file.type.startsWith('image/')) continue;
-    
+
     pendingFiles.value.push(file);
     pendingPreviews.value.push(URL.createObjectURL(file));
   }
-};
-
-const isDragging = ref(false);
-
-const onDragOver = (event: DragEvent) => {
-  event.preventDefault();
-  isDragging.value = true;
-};
-
-const onDragLeave = () => {
-  isDragging.value = false;
 };
 
 const removePendingFile = (index: number) => {
@@ -218,14 +184,13 @@ const markExistingForDeletion = (screenshot: Screenshot) => {
   deletedScreenshotIds.value.push(screenshot.id);
 };
 
-// Lightbox for preview
 const previewLightboxOpen = ref(false);
 const previewLightboxIndex = ref(0);
 
 const allPreviewUrls = computed(() => {
   const existing = existingScreenshots.value
-    .filter(s => !deletedScreenshotIds.value.includes(s.id))
-    .map(s => s.url);
+    .filter(screenshot => !deletedScreenshotIds.value.includes(screenshot.id))
+    .map(screenshot => screenshot.url);
   return [...existing, ...pendingPreviews.value];
 });
 
@@ -241,19 +206,18 @@ const closePreviewLightbox = () => {
 
 const handleSubmit = async () => {
   if (!props.title) return;
-  
+
   isSubmitting.value = true;
-  
+
   let finishedAtIso: string | undefined = undefined;
   if (status.value === UserTitleStatus.COMPLETED && selectedYear.value) {
-     const year = selectedYear.value;
-     const month = selectedMonth.value !== null ? selectedMonth.value : 0;
-     const date = new Date(year, month, 1, 12, 0, 0); 
-     finishedAtIso = date.toISOString();
+    const year = selectedYear.value;
+    const month = selectedMonth.value !== null ? selectedMonth.value : 0;
+    const date = new Date(year, month, 1, 12, 0, 0);
+    finishedAtIso = date.toISOString();
   }
 
   try {
-    // 1. Add/update the title entry
     const result = await titlesApi.add({
       external_id: props.title.external_id,
       type: props.title.type,
@@ -273,7 +237,6 @@ const handleSubmit = async () => {
     if (userTitleId) {
       isUploadingScreenshots.value = true;
 
-      // 2. Delete removed screenshots
       for (const id of deletedScreenshotIds.value) {
         try {
           await titlesApi.deleteScreenshot(id);
@@ -282,7 +245,6 @@ const handleSubmit = async () => {
         }
       }
 
-      // 3. Upload new screenshots
       for (const file of pendingFiles.value) {
         try {
           await titlesApi.uploadScreenshot(userTitleId, file);
@@ -323,304 +285,134 @@ const handleDelete = async () => {
 
 <template>
   <div v-if="isOpen && title" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click="$emit('close')">
-    <div class="w-full max-w-lg bg-zinc-900 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
-      
-      <!-- Header -->
-      <div class="p-6 flex gap-6 bg-zinc-800/50 items-start">
-        <div class="w-24 h-36 bg-zinc-800 rounded-lg shadow-md flex-shrink-0 overflow-hidden">
-          <img v-if="title.poster_url" :src="title.poster_url" class="w-full h-full object-cover" />
-          <div v-else class="w-full h-full flex items-center justify-center text-zinc-600 text-xs">No Img</div>
-        </div>
-        
-        <div class="flex-1">
-          <div class="flex justify-between items-start mb-2">
-            <h2 class="text-xl font-bold text-white leading-tight">{{ title.title }}</h2>
-            <div v-if="status !== UserTitleStatus.PLANNED" class="flex flex-col items-center ml-2">
-              <span class="text-3xl font-black text-primary-500 min-w-[3rem] text-center">{{ rating === 0 ? '-' : (rating === 10 ? '10' : rating.toFixed(1)) }}</span>
-              <span class="text-2xl">{{ emoji }}</span>
-            </div>
-          </div>
-          <p class="text-zinc-400 text-sm">
-             {{ title.release_year }} 
-             <span v-if="title.genres && title.genres.length">• {{ title.genres.join(', ') }}</span>
-          </p>
-        </div>
-      </div>
+    <div
+      class="game-review-modal w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+      :style="reviewToneStyle"
+      @click.stop
+    >
+      <div class="game-review-modal-tint" aria-hidden="true"></div>
+
+      <GameReviewHeader
+        :title="title"
+        :status="status"
+        :rating="rating"
+        :emoji="emoji"
+      />
 
       <div class="p-6 space-y-8 overflow-y-auto custom-scrollbar">
-        
-        <!-- Score Slider -->
-        <div v-if="status !== UserTitleStatus.PLANNED" class="space-y-2 pb-2">
-          <label class="text-sm font-medium text-zinc-400">Оценка</label>
-          <input 
-            type="range" 
-            v-model.number="rating" 
-            min="1" 
-            max="10" 
-            step="0.1"
-            class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
-          />
-          <div class="flex justify-between text-xs text-zinc-500 px-1">
-            <span>1.0</span>
-            <span>5.0</span>
-            <span>10.0</span>
-          </div>
-        </div>
+        <GameReviewRating
+          v-if="status !== UserTitleStatus.PLANNED"
+          v-model="rating"
+        />
 
-        <!-- Status -->
-        <div class="space-y-4 pb-5">
-          <div class="flex flex-wrap gap-2 ">
-            <button 
-              v-for="s in statuses" 
-              :key="s.id"
-              class="px-3 py-1.5 rounded-full text-sm font-medium transition-all border"
-              :class="status === s.id 
-                ? 'bg-primary-600 text-white border-primary-600' 
-                : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500 '"
-              @click="status = s.id"
-            >
-              {{ s.label }}
-            </button>
-          </div>
-        </div>
+        <GameReviewStatusSelector
+          v-model="status"
+          :statuses="statuses"
+        />
 
-        <!-- Date Input -->
-        <div v-if="status === UserTitleStatus.COMPLETED" class="space-y-2 pb-2">
-           <label class="text-sm font-medium text-zinc-400">Дата завершения</label>
-           <div class="flex gap-2">
-             <div class="w-1/2">
-               <AppSelect
-                 v-model="selectedMonth"
-                 :options="monthOptions"
-                 placeholder="Месяц"
-               />
-             </div>
-             <div class="w-1/2">
-               <AppSelect
-                 v-model="selectedYear"
-                 :options="yearOptions"
-                 placeholder="Год"
-               />
-             </div>
-           </div>
-        </div>
+        <GameReviewCompletionDate
+          v-if="status === UserTitleStatus.COMPLETED"
+          :month="selectedMonth"
+          :year="selectedYear"
+          :month-options="monthOptions"
+          :year-options="yearOptions"
+          @update:month="selectedMonth = $event"
+          @update:year="selectedYear = $event"
+        />
 
-        <!-- Review -->
-        <div class="space-y-2">
-          <textarea 
-            v-model="review" 
-            ref="textareaRef"
-            class="w-full h-32 bg-zinc-800 rounded-lg p-3 text-white resize-none outline-none focus:ring-2 focus:ring-primary-500 placeholder-zinc-600"
-            placeholder="Напишите ваше мнение..."
-            maxlength="5000"
-          ></textarea>
-          <div class="flex justify-between pl-2 items-center">
-            <span class="text-xs text-zinc-500">{{ review.length }} / 5000</span>
-            
-            <button 
-              type="button"
-              @click="insertSpoiler"
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors text-zinc-400 hover:text-white hover:bg-zinc-700"
-              title="Обернуть выделенный текст в спойлер"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-              Спойлер
-            </button>
-          </div>
-        </div>
+        <GameReviewTextArea v-model="review" />
 
-        <!-- Screenshots -->
-        <div class="space-y-3">
-          <label class="text-sm font-medium text-zinc-400 block" style="margin-bottom: 12px;">
-            Скриншоты 
-            <span class="text-zinc-600">({{ totalScreenshots }}/{{ MAX_SCREENSHOTS }})</span>
-          </label>
-
-          <!-- Existing screenshots -->
-          <div v-if="existingScreenshots.length > 0" class="grid grid-cols-3 gap-2">
-            <div 
-              v-for="screenshot in existingScreenshots" 
-              :key="screenshot.id"
-              class="relative group rounded-lg overflow-hidden aspect-video bg-zinc-800"
-              :class="{ 'opacity-30': deletedScreenshotIds.includes(screenshot.id) }"
-            >
-              <img 
-                :src="screenshot.url" 
-                class="w-full h-full object-cover cursor-pointer" 
-                @click="!deletedScreenshotIds.includes(screenshot.id) && openPreviewLightbox(screenshot.url)"
-              />
-              <!-- Magnify icon -->
-              <div 
-                v-if="!deletedScreenshotIds.includes(screenshot.id)" 
-                class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  <line x1="11" y1="8" x2="11" y2="14"></line>
-                  <line x1="8" y1="11" x2="14" y2="11"></line>
-                </svg>
-              </div>
-              <button
-                v-if="!deletedScreenshotIds.includes(screenshot.id)"
-                @click.stop="markExistingForDeletion(screenshot)"
-                class="absolute top-1 right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs z-10"
-                title="Удалить"
-              >✕</button>
-              <div
-                v-else
-                class="absolute inset-0 flex items-center justify-center bg-black/50 text-zinc-300 text-xs"
-              >Удалён</div>
-            </div>
-          </div>
-
-          <!-- Pending screenshots previews -->
-          <div v-if="pendingPreviews.length > 0" class="grid grid-cols-3 gap-2">
-            <div 
-              v-for="(preview, index) in pendingPreviews" 
-              :key="'pending-' + index"
-              class="relative group rounded-lg overflow-hidden aspect-video bg-zinc-800"
-            >
-              <img 
-                :src="preview" 
-                class="w-full h-full object-cover cursor-pointer" 
-                @click="openPreviewLightbox(preview)"
-              />
-              <!-- Magnify icon -->
-              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  <line x1="11" y1="8" x2="11" y2="14"></line>
-                  <line x1="8" y1="11" x2="14" y2="11"></line>
-                </svg>
-              </div>
-              <button
-                @click.stop="removePendingFile(index)"
-                class="absolute top-1 right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs z-10"
-                title="Убрать"
-              >✕</button>
-              <div class="absolute bottom-1 left-1 px-1.5 py-0.5 bg-primary-600/80 rounded text-[10px] text-white">Новый</div>
-            </div>
-          </div>
-
-          <!-- Drop zone -->
-          <div
-            v-if="canAddMore"
-            class="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors !mt-6"
-            :class="isDragging 
-              ? 'border-primary-500 bg-primary-500/10' 
-              : 'border-zinc-700 hover:border-zinc-500'"
-            @click="openFileDialog"
-            @drop="onDrop"
-            @dragover="onDragOver"
-            @dragleave="onDragLeave"
-          >
-            <input
-              ref="fileInputRef"
-              type="file"
-              accept="image/*"
-              multiple
-              class="hidden"
-              @change="onFileSelected"
-            />
-            <div class="flex flex-col items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-500">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
-              <span class="text-xs text-zinc-500">
-                Перетащите или нажмите для загрузки
-              </span>
-              <span class="text-[10px] text-zinc-600">JPEG, PNG, WebP, GIF • до 5 МБ</span>
-            </div>
-          </div>
-        </div>
+        <GameReviewScreenshots
+          :existing-screenshots="existingScreenshots"
+          :deleted-screenshot-ids="deletedScreenshotIds"
+          :pending-previews="pendingPreviews"
+          :total-screenshots="totalScreenshots"
+          :max-screenshots="MAX_SCREENSHOTS"
+          :can-add-more="canAddMore"
+          @add-files="addScreenshotFiles"
+          @remove-pending="removePendingFile"
+          @delete-existing="markExistingForDeletion"
+          @open-preview="openPreviewLightbox"
+        />
       </div>
 
-      <!-- Footer -->
-      <!-- Footer: Delete confirmation -->
-      <div v-if="showDeleteConfirm" class="p-4 border-t border-red-500/30 bg-red-500/5">
-        <div class="flex items-center gap-3 mb-3">
-          <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-            </svg>
-          </div>
-          <p class="text-sm text-zinc-300">Тайтл, оценка, отзыв и скриншоты будут удалены безвозвратно.</p>
-        </div>
-        <div class="flex justify-end gap-2">
-          <button
-            @click="showDeleteConfirm = false"
-            :disabled="isDeleting"
-            class="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors cursor-pointer"
-          >Отмена</button>
-          <button
-            @click="handleDelete"
-            :disabled="isDeleting"
-            class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
-          >
-            <svg v-if="isDeleting" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-            {{ isDeleting ? 'Удаление...' : 'Да, удалить' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Footer: Normal -->
-      <div v-else class="p-4 border-t border-zinc-800 flex justify-between bg-zinc-900">
-        <div>
-          <button
-            v-if="initialData?.userTitleId"
-            @click="showDeleteConfirm = true"
-            class="px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-          >Удалить</button>
-        </div>
-        <div class="flex gap-3">
-          <AppButton variant="ghost" @click="$emit('close')">Отмена</AppButton>
-          <AppButton :loading="isSubmitting || isUploadingScreenshots" @click="handleSubmit">
-            {{ isUploadingScreenshots ? 'Загрузка...' : 'Добавить' }}
-          </AppButton>
-        </div>
-      </div>
-    
+      <GameReviewFooter
+        v-model:show-delete-confirm="showDeleteConfirm"
+        :has-user-title="Boolean(initialData?.userTitleId)"
+        :is-deleting="isDeleting"
+        :is-submitting="isSubmitting"
+        :is-uploading-screenshots="isUploadingScreenshots"
+        @close="$emit('close')"
+        @submit="handleSubmit"
+        @delete="handleDelete"
+      />
     </div>
   </div>
 
-  <!-- Preview Lightbox -->
-  <Teleport to="body">
-    <div 
-      v-if="previewLightboxOpen && allPreviewUrls.length > 0" 
-      class="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
-      @click="closePreviewLightbox"
-    >
-      <button 
-        class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 border-none text-white text-xl cursor-pointer flex items-center justify-center transition-colors z-[201]"
-        @click.stop="closePreviewLightbox"
-      >✕</button>
-      <button 
-        v-if="previewLightboxIndex > 0" 
-        class="absolute left-5 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 border-none text-white text-4xl cursor-pointer flex items-center justify-center transition-colors z-[201]"
-        @click.stop="previewLightboxIndex--"
-      >‹</button>
-      <div class="flex flex-col items-center gap-3 max-w-[90vw] max-h-[90vh]" @click.stop>
-        <img 
-          :src="allPreviewUrls[previewLightboxIndex]" 
-          class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-        />
-        <span class="text-white/60 text-sm">{{ previewLightboxIndex + 1 }} / {{ allPreviewUrls.length }}</span>
-      </div>
-      <button 
-        v-if="previewLightboxIndex < allPreviewUrls.length - 1" 
-        class="absolute right-5 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 border-none text-white text-4xl cursor-pointer flex items-center justify-center transition-colors z-[201]"
-        @click.stop="previewLightboxIndex++"
-      >›</button>
-    </div>
-  </Teleport>
+  <ImageLightbox
+    v-model:current-index="previewLightboxIndex"
+    :is-open="previewLightboxOpen"
+    :urls="allPreviewUrls"
+    @close="closePreviewLightbox"
+  />
 </template>
 
 <style scoped>
+.game-review-modal {
+  position: relative;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, rgb(var(--review-tone-rgb)) 28%, var(--color-border));
+  box-shadow:
+    0 24px 70px rgb(0 0 0 / var(--review-modal-shadow)),
+    0 0 0 1px rgb(var(--review-tone-rgb) / var(--review-modal-ring));
+  transition:
+    background-color 450ms ease,
+    background 450ms ease,
+    border-color 450ms ease,
+    box-shadow 450ms ease,
+    color 250ms ease;
+}
+
+.game-review-modal-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: rgb(var(--review-tone-rgb));
+  opacity: var(--review-modal-tint);
+  transition: background-color 450ms ease, opacity 250ms ease;
+}
+
+.game-review-modal > :not(.game-review-modal-tint) {
+  position: relative;
+  z-index: 1;
+}
+
+:global(:root),
+:global([data-theme="light"]) {
+  --review-modal-tint: 0.08;
+  --review-header-tint: 0.1;
+  --review-footer-tint: 4%;
+  --review-modal-ring: 0.16;
+  --review-modal-shadow: 0.16;
+}
+
+:global([data-theme="dark"]) {
+  --review-modal-tint: 0.13;
+  --review-header-tint: 0.14;
+  --review-footer-tint: 8%;
+  --review-modal-ring: 0.22;
+  --review-modal-shadow: 0.54;
+}
+
+:global([data-theme="midnight"]) {
+  --review-modal-tint: 0.16;
+  --review-header-tint: 0.18;
+  --review-footer-tint: 10%;
+  --review-modal-ring: 0.28;
+  --review-modal-shadow: 0.5;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }

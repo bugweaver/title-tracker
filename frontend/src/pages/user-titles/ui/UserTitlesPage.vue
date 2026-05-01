@@ -2,7 +2,16 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { titlesApi } from '@/shared/api/titles';
-import { TitleCategory, UserTitleStatus, type UserTitle } from '@/entities/title';
+import {
+  TitleCategory,
+  UserTitleStatus,
+  type UserTitle,
+  getTitleCategoryFromRouteSegment,
+  getTitleCategoryRouteSegment,
+  getAvailableTitleStatuses,
+  getTitleStatusFromRouteSegment,
+  getTitleStatusRouteSegment,
+} from '@/entities/title';
 import UserGameCard from '@/features/games/ui/UserGameCard.vue';
 import AppSelect from '@/shared/ui/AppSelect.vue';
 import { usersApi, type UserProfile } from '@/shared/api';
@@ -18,10 +27,29 @@ const followLoading = ref(false);
 
 const isOwnProfile = computed(() => userStore.user?.id === userId.value);
 
-const activeTab = ref<TitleCategory>(TitleCategory.GAME);
-const activeStatus = ref<UserTitleStatus | 'all'>('all');
 const activeYear = ref<number | null>(null);
 const activeMonth = ref<number | null>(null);
+
+const activeTab = computed(() => getTitleCategoryFromRouteSegment(route.params.category));
+const activeStatus = computed(() => getTitleStatusFromRouteSegment(route.params.status, activeTab.value));
+
+const getTabRoute = (category: TitleCategory) => ({
+  name: 'user-profile',
+  params: {
+    id: route.params.id,
+    category: getTitleCategoryRouteSegment(category),
+    status: undefined,
+  },
+});
+
+const getStatusRoute = (status: UserTitleStatus | 'all') => ({
+  name: 'user-profile',
+  params: {
+    id: route.params.id,
+    category: getTitleCategoryRouteSegment(activeTab.value),
+    status: status === 'all' ? undefined : getTitleStatusRouteSegment(status),
+  },
+});
 
 const fetchUser = async () => {
   try {
@@ -115,18 +143,8 @@ const getCountByStatus = (status: UserTitleStatus | 'all', category: TitleCatego
 
 const currentStatuses = computed(() => {
   const category = activeTab.value;
-  const statuses: (UserTitleStatus | 'all')[] = [
-      'all',
-      UserTitleStatus.COMPLETED,
-      ...(category !== TitleCategory.MOVIE
-        ? [category === TitleCategory.GAME ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING]
-        : []),
-      UserTitleStatus.DROPPED,
-      UserTitleStatus.PLANNED,
-      UserTitleStatus.ON_HOLD,
-  ];
 
-  return statuses.map(status => ({
+  return getAvailableTitleStatuses(category).map(status => ({
     id: status,
     label: getStatusLabel(status, category),
     count: getCountByStatus(status, category)
@@ -201,7 +219,6 @@ const displayedTitles = computed(() => {
 });
 
 watch(activeTab, () => {
-  activeStatus.value = 'all';
   activeYear.value = null;
   activeMonth.value = null;
 });
@@ -255,36 +272,36 @@ watch(activeTab, () => {
 
     <div class="flex flex-col gap-6">
       <div class="flex gap-2 border-b border-border items-center">
-        <button
+        <RouterLink
           v-for="tab in tabs"
           :key="tab.id"
+          :to="getTabRoute(tab.id)"
           class="px-4 py-2 -mb-px border-b-2 font-medium transition-colors duration-200 cursor-pointer text-base"
           :class="[
             activeTab === tab.id
               ? 'border-primary-500 text-primary-500'
               : 'border-transparent text-text-secondary hover:text-text hover:border-border-hover'
           ]"
-          @click="activeTab = tab.id"
         >
           {{ tab.label }}
-        </button>
+        </RouterLink>
       </div>
 
       <div class="flex gap-2 flex-wrap">
-        <button
+        <RouterLink
           v-for="status in currentStatuses"
           :key="status.id"
+          :to="getStatusRoute(status.id)"
           class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer"
           :class="[
             activeStatus === status.id
               ? 'bg-primary-100 text-primary-700'
               : 'text-text-secondary hover:bg-background-soft hover:text-text'
           ]"
-          @click="activeStatus = status.id"
         >
           {{ status.label }}
           <span class="ml-1.5 opacity-70 text-xs">{{ status.count }}</span>
-        </button>
+        </RouterLink>
       </div>
 
       <div v-if="availableYears.length > 0" class="flex gap-2">

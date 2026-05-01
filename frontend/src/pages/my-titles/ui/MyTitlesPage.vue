@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useUserStore } from '@/entities/user';
-import { useTitleStore, TitleCategory, UserTitleStatus } from '@/entities/title';
+import {
+  useTitleStore,
+  TitleCategory,
+  UserTitleStatus,
+  getTitleCategoryFromRouteSegment,
+  getTitleCategoryRouteSegment,
+  getAvailableTitleStatuses,
+  getTitleStatusFromRouteSegment,
+  getTitleStatusRouteSegment,
+} from '@/entities/title';
 import { type TitleSearchResult, usersApi, type UserProfile } from '@/shared/api';
 import { AppSelect } from '@/shared/ui';
 import GameSearchModal from '@/features/games/ui/GameSearchModal.vue';
@@ -12,13 +22,31 @@ import AvatarCropModal from '@/features/user/ui/AvatarCropModal.vue';
 
 const userStore = useUserStore();
 const titleStore = useTitleStore();
+const route = useRoute();
 
-const activeTab = ref<TitleCategory>(TitleCategory.GAME);
-const activeStatus = ref<UserTitleStatus | 'all'>('all');
 const isSearchModalOpen = ref(false);
 const isReviewModalOpen = ref(false);
 const selectedTitle = ref<TitleSearchResult | null>(null);
 const userProfile = ref<UserProfile | null>(null);
+
+const activeTab = computed(() => getTitleCategoryFromRouteSegment(route.params.category));
+const activeStatus = computed(() => getTitleStatusFromRouteSegment(route.params.status, activeTab.value));
+
+const getTabRoute = (category: TitleCategory) => ({
+  name: 'my-titles',
+  params: {
+    category: getTitleCategoryRouteSegment(category),
+    status: undefined,
+  },
+});
+
+const getStatusRoute = (status: UserTitleStatus | 'all') => ({
+  name: 'my-titles',
+  params: {
+    category: getTitleCategoryRouteSegment(activeTab.value),
+    status: status === 'all' ? undefined : getTitleStatusRouteSegment(status),
+  },
+});
 
 const handleTitleSelect = (title: TitleSearchResult) => {
   selectedTitle.value = title;
@@ -133,21 +161,8 @@ const getStatusLabel = (status: UserTitleStatus | 'all', category: TitleCategory
 // Computed statuses with counts for the current tab
 const currentStatuses = computed(() => {
   const category = activeTab.value;
-  
-  // Define relevant statuses based on category
-  const statuses = [
-      'all',
-      UserTitleStatus.COMPLETED,
-      // "Playing" for games, "Watching" for others. Exclude for Movies.
-      ...(category !== TitleCategory.MOVIE 
-          ? [category === TitleCategory.GAME ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING] 
-          : []),
-      UserTitleStatus.DROPPED,
-      UserTitleStatus.PLANNED,
-      UserTitleStatus.ON_HOLD,
-  ] as const;
 
-  return statuses.map(status => ({
+  return getAvailableTitleStatuses(category).map(status => ({
     id: status,
     label: getStatusLabel(status, category),
     count: titleStore.getCountByStatus(status, category)
@@ -232,7 +247,6 @@ const monthOptions = computed(() => [
 ]);
 
 watch(activeTab, () => {
-  activeStatus.value = 'all';
   selectedYear.value = null; // Reset filters
   selectedMonth.value = null;
 });
@@ -324,36 +338,36 @@ const activeSearchCategory = computed(() => {
 
     <div class="flex flex-col gap-6">
       <div class="flex gap-2 border-b border-border items-center">
-        <button
+        <RouterLink
           v-for="tab in tabs"
           :key="tab.id"
+          :to="getTabRoute(tab.id)"
           class="px-4 py-2 -mb-px border-b-2 font-medium transition-colors duration-200 cursor-pointer text-base"
           :class="[
             activeTab === tab.id
               ? 'border-primary-500 text-primary-500'
               : 'border-transparent text-text-secondary hover:text-text hover:border-border-hover'
           ]"
-          @click="activeTab = tab.id"
         >
           {{ tab.label }}
-        </button>
+        </RouterLink>
       </div>
 
       <div class="flex gap-2 flex-wrap items-center">
-        <button
+        <RouterLink
           v-for="status in currentStatuses"
           :key="status.id"
+          :to="getStatusRoute(status.id)"
           class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer"
           :class="[
             activeStatus === status.id
               ? 'bg-primary-100 text-primary-700'
               : 'text-text-secondary hover:bg-background-soft hover:text-text'
           ]"
-          @click="activeStatus = status.id"
         >
           {{ status.label }}
           <span class="ml-1.5 opacity-70 text-xs">{{ status.count }}</span>
-        </button>
+        </RouterLink>
 
         <!-- Time Filters -->
         <div class="flex gap-2 ml-auto">

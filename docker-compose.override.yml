@@ -1,4 +1,8 @@
 services:
+  db:
+    # Keep local dev compatible with existing PGDATA volumes created before postgres:18.
+    image: postgres:17-alpine
+
   backend:
     build:
       context: ./backend
