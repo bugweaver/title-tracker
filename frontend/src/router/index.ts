@@ -16,12 +16,12 @@ const router = createRouter({
       name: 'about',
       component: () => import('../views/AboutView.vue'),
     },
-    // {
-    //   path: '/register',
-    //   name: 'register',
-    //   component: () => import('@/pages/register').then(m => m.RegisterPage),
-    //   meta: { guestOnly: true },
-    // },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/pages/register').then(m => m.RegisterPage),
+      meta: { guestOnly: true },
+    },
     {
       path: '/login',
       name: 'login',

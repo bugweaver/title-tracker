@@ -39,9 +39,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: title_tracker_frontend
-    # Production command: Build and Preview
-    # Note: Using port 5173 to match nginx config
-    command: /bin/sh -c "bun run build && bun run preview -- --host --port 5173"
     restart: always
     volumes:
       # Use code from image
