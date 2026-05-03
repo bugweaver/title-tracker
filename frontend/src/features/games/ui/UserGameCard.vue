@@ -54,7 +54,11 @@ const interpolateColor = (
 
 const cardToneRgb = computed<[number, number, number]>(() => {
   const scoreValue = props.userTitle.score;
-  if (!scoreValue) return [113, 113, 122];
+  if (!scoreValue) {
+    return props.userTitle.status === 'playing' || props.userTitle.status === 'watching'
+      ? [59, 130, 246]
+      : [113, 113, 122];
+  }
 
   const normalizedScore = Math.min(10, Math.max(1, scoreValue));
   if (normalizedScore <= 5) {
