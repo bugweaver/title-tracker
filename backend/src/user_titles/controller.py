@@ -75,13 +75,19 @@ class UserTitlesController(Controller):
             and data.status == UserTitleStatus.COMPLETED
             and data.is_completed_100_percent
         )
+        game_platform = (
+            data.game_platform
+            if data.type == "game" and data.status == UserTitleStatus.COMPLETED
+            else None
+        )
 
         if user_title:
             # Track meaningful changes before updating
             if (user_title.status != data.status
                 or user_title.score != data.score
                 or user_title.review_text != data.review_text
-                or user_title.is_completed_100_percent != is_completed_100_percent):
+                or user_title.is_completed_100_percent != is_completed_100_percent
+                or user_title.game_platform != game_platform):
                 has_meaningful_change = True
 
             # Update existing
@@ -90,6 +96,7 @@ class UserTitlesController(Controller):
             user_title.review_text = data.review_text
             user_title.is_spoiler = data.is_spoiler
             user_title.is_completed_100_percent = is_completed_100_percent
+            user_title.game_platform = game_platform
 
             if data.finished_at:
                 user_title.finished_at = data.finished_at.replace(tzinfo=None)
@@ -115,6 +122,7 @@ class UserTitlesController(Controller):
                 is_spoiler=data.is_spoiler,
                 finished_at=finished_at,
                 is_completed_100_percent=is_completed_100_percent,
+                game_platform=game_platform,
             )
             db_session.add(user_title)
 
@@ -155,6 +163,7 @@ class UserTitlesController(Controller):
             is_spoiler=user_title.is_spoiler,
             finished_at=user_title.finished_at,
             is_completed_100_percent=user_title.is_completed_100_percent,
+            game_platform=user_title.game_platform,
             screenshots=[
                 ScreenshotRead.model_validate(s)
                 for s in user_title.screenshots

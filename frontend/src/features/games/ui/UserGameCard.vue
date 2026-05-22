@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted, type CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
-import { type UserTitleStatus, type Screenshot } from '@/entities/title';
+import { type GamePlatform, type UserTitleStatus, type Screenshot } from '@/entities/title';
 import { TitleCategory } from '@/entities/title';
+import GamePlatformBadge from './GamePlatformBadge.vue';
 
 interface Title {
   id: number;
@@ -22,6 +23,7 @@ interface UserTitle {
   review_text: string | null;
   is_spoiler?: boolean;
   is_completed_100_percent: boolean;
+  game_platform: GamePlatform | null;
   title: Title;
   finished_at?: string | null;
   screenshots?: Screenshot[];
@@ -103,6 +105,12 @@ const statusColorClass = computed(() => {
 const isCompleted100PercentGame = computed(() =>
   props.userTitle.title.category === TitleCategory.GAME
   && props.userTitle.is_completed_100_percent
+);
+
+const gamePlatform = computed(() =>
+  props.userTitle.title.category === TitleCategory.GAME
+    ? props.userTitle.game_platform
+    : null
 );
 
 const isRevealed = ref(false);
@@ -229,6 +237,13 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
         >
           100% пройдено
         </span>
+
+        <GamePlatformBadge
+          v-if="gamePlatform"
+          :platform="gamePlatform"
+          icon-size="lg"
+          class="platform-badge text-xs px-2.5 py-1 rounded-full font-semibold"
+        />
         
         <button 
           v-if="editable"
@@ -401,6 +416,12 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
     linear-gradient(135deg, rgb(124 58 237 / 0.95), rgb(217 70 239 / 0.95));
   border: 1px solid rgb(168 85 247 / var(--completion-badge-border));
   box-shadow: 0 8px 18px rgb(168 85 247 / var(--completion-badge-shadow));
+}
+
+.platform-badge {
+  color: rgb(var(--card-tone-rgb));
+  background: color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-badge-tint), var(--color-surface-hover));
+  border: 1px solid color-mix(in srgb, rgb(var(--card-tone-rgb)) 28%, var(--color-border));
 }
 
 .screenshot-chip {

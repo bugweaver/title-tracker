@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, type CSSProperties } from 'vue';
 import { type TitleSearchResult, titlesApi, type Screenshot } from '@/shared/api/titles';
-import { UserTitleStatus, useTitleStore } from '@/entities/title';
+import { GamePlatform, UserTitleStatus, useTitleStore } from '@/entities/title';
 import GameReviewCompletionDate from './GameReviewCompletionDate.vue';
 import GameReviewFooter from './GameReviewFooter.vue';
 import GameReviewFullCompletionToggle from './GameReviewFullCompletionToggle.vue';
 import GameReviewHeader from './GameReviewHeader.vue';
+import GameReviewPlatformSelect from './GameReviewPlatformSelect.vue';
 import GameReviewRating from './GameReviewRating.vue';
 import GameReviewScreenshots from './GameReviewScreenshots.vue';
 import GameReviewStatusSelector from './GameReviewStatusSelector.vue';
@@ -25,6 +26,7 @@ const props = defineProps<{
     is_spoiler?: boolean;
     finished_at?: string | null;
     is_completed_100_percent?: boolean;
+    game_platform?: GamePlatform | null;
     screenshots?: Screenshot[];
   } | null;
 }>();
@@ -40,6 +42,7 @@ const review = ref('');
 const selectedYear = ref<number | null>(null);
 const selectedMonth = ref<number | null>(null);
 const isCompleted100Percent = ref(false);
+const selectedPlatform = ref<GamePlatform | null>(null);
 const isSubmitting = ref(false);
 const isDeleting = ref(false);
 const showDeleteConfirm = ref(false);
@@ -58,6 +61,7 @@ watch(() => props.isOpen, (isOpen) => {
       rating.value = props.initialData.score || 0;
       review.value = props.initialData.review_text || '';
       isCompleted100Percent.value = Boolean(props.initialData.is_completed_100_percent);
+      selectedPlatform.value = props.initialData.game_platform || null;
       existingScreenshots.value = props.initialData.screenshots ? [...props.initialData.screenshots] : [];
       if (props.initialData.finished_at) {
         const date = new Date(props.initialData.finished_at);
@@ -72,6 +76,7 @@ watch(() => props.isOpen, (isOpen) => {
       rating.value = 0;
       review.value = '';
       isCompleted100Percent.value = false;
+      selectedPlatform.value = null;
       existingScreenshots.value = [];
       const now = new Date();
       selectedYear.value = now.getFullYear();
@@ -89,9 +94,16 @@ const canMarkCompleted100Percent = computed(() =>
   props.title?.type === 'game' && status.value === UserTitleStatus.COMPLETED
 );
 
-watch(canMarkCompleted100Percent, (canMark) => {
+const canSelectGamePlatform = computed(() =>
+  props.title?.type === 'game' && status.value === UserTitleStatus.COMPLETED
+);
+
+watch([canMarkCompleted100Percent, canSelectGamePlatform], ([canMark, canSelectPlatform]) => {
   if (!canMark) {
     isCompleted100Percent.value = false;
+  }
+  if (!canSelectPlatform) {
+    selectedPlatform.value = null;
   }
 });
 
@@ -163,6 +175,14 @@ const monthOptions = [
   { value: 9, label: 'Октябрь' },
   { value: 10, label: 'Ноябрь' },
   { value: 11, label: 'Декабрь' },
+];
+
+const platformOptions = [
+  { value: null, label: 'Не выбрана' },
+  { value: GamePlatform.PC, label: GamePlatform.PC },
+  { value: GamePlatform.PLAYSTATION, label: GamePlatform.PLAYSTATION },
+  { value: GamePlatform.XBOX, label: GamePlatform.XBOX },
+  { value: GamePlatform.NINTENDO, label: GamePlatform.NINTENDO },
 ];
 
 const yearOptions = computed(() => {
@@ -246,6 +266,7 @@ const handleSubmit = async () => {
       is_spoiler: /<[^<>]+>/.test(review.value),
       finished_at: finishedAtIso,
       is_completed_100_percent: canMarkCompleted100Percent.value && isCompleted100Percent.value,
+      game_platform: canSelectGamePlatform.value ? selectedPlatform.value : null,
     });
 
     const userTitleId = result.id || props.initialData?.userTitleId;
@@ -339,6 +360,12 @@ const handleDelete = async () => {
         <GameReviewFullCompletionToggle
           v-if="canMarkCompleted100Percent"
           v-model="isCompleted100Percent"
+        />
+
+        <GameReviewPlatformSelect
+          v-if="canSelectGamePlatform"
+          v-model="selectedPlatform"
+          :options="platformOptions"
         />
 
         <GameReviewTextArea v-model="review" class="pt-3" />

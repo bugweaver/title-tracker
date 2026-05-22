@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from core.models.title import TitleCategory, UserTitleStatus
+from core.models.title import GamePlatform, TitleCategory, UserTitleStatus
 from screenshots.schemas import ScreenshotRead
 
 
@@ -29,6 +29,7 @@ class UserTitleBase(BaseModel):
     status: UserTitleStatus
     score: int | float | None = None
     review_text: str | None = None
+    game_platform: GamePlatform | None = None
 
 
 class UserTitleRead(UserTitleBase):

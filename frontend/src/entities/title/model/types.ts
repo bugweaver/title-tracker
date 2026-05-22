@@ -14,6 +14,13 @@ export enum UserTitleStatus {
   ON_HOLD = 'on_hold',
 }
 
+export enum GamePlatform {
+  PC = 'PC',
+  PLAYSTATION = 'Playstation',
+  XBOX = 'Xbox',
+  NINTENDO = 'Nintendo',
+}
+
 export interface Screenshot {
   id: number;
   url: string;
@@ -40,6 +47,7 @@ export interface UserTitle {
   review_text: string | null;
   is_spoiler: boolean;
   is_completed_100_percent: boolean;
+  game_platform: GamePlatform | null;
   created_at: string;
   updated_at: string;
   title: Title;

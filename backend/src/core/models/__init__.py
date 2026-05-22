@@ -16,7 +16,7 @@ from .db_helper import db_helper
 # )
 # from .role import Role, user_roles
 from .user import User
-from .title import Title, UserTitle, TitleCategory, UserTitleStatus
+from .title import GamePlatform, Title, UserTitle, TitleCategory, UserTitleStatus
 from .notification import Notification, NotificationType
 from .screenshot import TitleScreenshot
 
@@ -28,6 +28,7 @@ __all__ = (
     "UserTitle",
     "TitleCategory",
     "UserTitleStatus",
+    "GamePlatform",
     "Notification",
     "NotificationType",
     "TitleScreenshot",

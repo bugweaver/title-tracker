@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from core.models.title import UserTitleStatus
+from core.models.title import GamePlatform, UserTitleStatus
 from screenshots.schemas import ScreenshotRead
 
 
@@ -24,6 +24,7 @@ class AddUserTitleRequest(BaseModel):
     is_spoiler: bool = False
     finished_at: datetime | None = None
     is_completed_100_percent: bool = False
+    game_platform: GamePlatform | None = None
 
     
 class UserTitleRead(BaseModel):
@@ -35,5 +36,6 @@ class UserTitleRead(BaseModel):
     is_spoiler: bool
     finished_at: datetime | None
     is_completed_100_percent: bool
+    game_platform: GamePlatform | None
     screenshots: list[ScreenshotRead] = []
 

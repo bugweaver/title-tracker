@@ -6,6 +6,7 @@ import {
   useTitleStore,
   TitleCategory,
   UserTitleStatus,
+  type GamePlatform,
   type UserTitle,
   getTitleCategoryFromRouteSegment,
   getTitleCategoryRouteSegment,
@@ -64,6 +65,7 @@ const selectedInitialData = ref<{
   is_spoiler?: boolean;
   finished_at?: string | null;
   is_completed_100_percent?: boolean;
+  game_platform?: GamePlatform | null;
   screenshots?: { id: number; url: string; position: number }[];
 } | null>(null);
 
@@ -87,6 +89,7 @@ const handleEditTitle = (userTitle: any) => {
     is_spoiler: userTitle.is_spoiler,
     finished_at: userTitle.finished_at,
     is_completed_100_percent: userTitle.is_completed_100_percent,
+    game_platform: userTitle.game_platform,
     screenshots: userTitle.screenshots || [],
   };
   

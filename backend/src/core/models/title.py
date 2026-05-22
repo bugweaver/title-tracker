@@ -30,6 +30,13 @@ class UserTitleStatus(str, Enum):
     ON_HOLD = "on_hold"
 
 
+class GamePlatform(str, Enum):
+    PC = "PC"
+    PLAYSTATION = "Playstation"
+    XBOX = "Xbox"
+    NINTENDO = "Nintendo"
+
+
 class Title(IntIdPkMixin, Base):
     name: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     category: Mapped[TitleCategory] = mapped_column(nullable=False)
@@ -52,6 +59,7 @@ class UserTitle(IntIdPkMixin, Base):
     is_spoiler: Mapped[bool] = mapped_column(default=False, server_default="false")
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
     is_completed_100_percent: Mapped[bool] = mapped_column(default=False, server_default="false")
+    game_platform: Mapped[GamePlatform | None] = mapped_column(nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())

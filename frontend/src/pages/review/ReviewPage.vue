@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { apiClient } from '@/shared/api';
 import type { UserTitle } from '@/entities/title';
 import { usersApi, type User } from '@/shared/api';
+import GamePlatformBadge from '@/features/games/ui/GamePlatformBadge.vue';
 
 interface ParsedSegment {
   id: number;
@@ -221,6 +222,14 @@ const formatDate = (dateStr: string | null | undefined) => {
           <div class="detail-card review-accent-card" v-if="entry.finished_at">
             <span class="detail-label">Дата завершения</span>
             <span class="detail-value">{{ formatDate(entry.finished_at) }}</span>
+          </div>
+          <div class="detail-card review-accent-card" v-if="entry.title.category === 'game' && entry.game_platform">
+            <span class="detail-label">Платформа</span>
+            <GamePlatformBadge
+              :platform="entry.game_platform"
+              icon-size="lg"
+              class="detail-value platform-detail-value"
+            />
           </div>
         </div>
 
@@ -538,6 +547,12 @@ const formatDate = (dateStr: string | null | undefined) => {
   font-size: 18px;
   font-weight: 600;
   color: var(--color-text);
+}
+
+.platform-detail-value {
+  align-items: center;
+  line-height: 1;
+  margin-top: 4px;
 }
 
 .detail-value.score {

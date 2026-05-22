@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { UserTitle } from '@/entities/title';
+import type { GamePlatform, UserTitle } from '@/entities/title';
 
 export type TitleType = 'game' | 'movie' | 'tv' | 'anime';
 
@@ -32,6 +32,7 @@ export interface AddUserTitleRequest {
   is_spoiler?: boolean;
   finished_at?: string;
   is_completed_100_percent?: boolean;
+  game_platform?: GamePlatform | null;
 }
 
 export const titlesApi = {
