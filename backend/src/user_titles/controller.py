@@ -77,7 +77,7 @@ class UserTitlesController(Controller):
         )
         game_platform = (
             data.game_platform
-            if data.type == "game" and data.status == UserTitleStatus.COMPLETED
+            if data.type == "game"
             else None
         )
 

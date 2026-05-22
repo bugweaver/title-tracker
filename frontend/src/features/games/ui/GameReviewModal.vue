@@ -95,7 +95,7 @@ const canMarkCompleted100Percent = computed(() =>
 );
 
 const canSelectGamePlatform = computed(() =>
-  props.title?.type === 'game' && status.value === UserTitleStatus.COMPLETED
+  props.title?.type === 'game'
 );
 
 watch([canMarkCompleted100Percent, canSelectGamePlatform], ([canMark, canSelectPlatform]) => {
