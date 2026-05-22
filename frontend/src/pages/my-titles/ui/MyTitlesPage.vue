@@ -6,6 +6,7 @@ import {
   useTitleStore,
   TitleCategory,
   UserTitleStatus,
+  type UserTitle,
   getTitleCategoryFromRouteSegment,
   getTitleCategoryRouteSegment,
   getAvailableTitleStatuses,
@@ -158,6 +159,30 @@ const getStatusLabel = (status: UserTitleStatus | 'all', category: TitleCategory
     return status;
 };
 
+const filterByFinishedPeriod = (titles: UserTitle[]) => {
+    if (selectedYear.value === null && selectedMonth.value === null) {
+        return titles;
+    }
+
+    return titles.filter((title) => {
+        if (!title.finished_at) {
+            return false;
+        }
+
+        const date = new Date(title.finished_at);
+
+        if (selectedYear.value !== null && date.getFullYear() !== selectedYear.value) {
+            return false;
+        }
+
+        if (selectedMonth.value !== null && date.getMonth() !== selectedMonth.value) {
+            return false;
+        }
+
+        return true;
+    });
+};
+
 // Computed statuses with counts for the current tab
 const currentStatuses = computed(() => {
   const category = activeTab.value;
@@ -165,28 +190,16 @@ const currentStatuses = computed(() => {
   return getAvailableTitleStatuses(category).map(status => ({
     id: status,
     label: getStatusLabel(status, category),
-    count: titleStore.getCountByStatus(status, category)
+    count: filterByFinishedPeriod(titleStore.getTitlesByStatus(status, category)).length
   }));
 });
 
 // Filtered list of titles to display
 const displayedTitles = computed(() => {
     // Create a copy to avoid mutating the store
-    let titles = [...titleStore.getTitlesByStatus(activeStatus.value, activeTab.value)];
-    
-    if (selectedYear.value) {
-        titles = titles.filter(t => {
-            const date = t.finished_at ? new Date(t.finished_at) : new Date(t.updated_at); // Fallback to updated_at
-            return date.getFullYear() === selectedYear.value;
-        });
-    }
-    
-    if (selectedMonth.value !== null) {
-        titles = titles.filter(t => {
-            const date = t.finished_at ? new Date(t.finished_at) : new Date(t.updated_at);
-            return date.getMonth() === selectedMonth.value;
-        });
-    }
+    const titles = filterByFinishedPeriod([
+        ...titleStore.getTitlesByStatus(activeStatus.value, activeTab.value),
+    ]);
     
     
     // Sort by "Smart Date" (finished_at OR updated_at) desc, then by ID desc
@@ -214,8 +227,9 @@ const availableYears = computed(() => {
     const years = new Set<number>();
     const titles = titleStore.getTitlesByStatus(activeStatus.value, activeTab.value);
     titles.forEach(t => {
-        const date = t.finished_at ? new Date(t.finished_at) : new Date(t.updated_at);
-        years.add(date.getFullYear());
+        if (t.finished_at) {
+            years.add(new Date(t.finished_at).getFullYear());
+        }
     });
     return Array.from(years).sort((a, b) => b - a);
 });

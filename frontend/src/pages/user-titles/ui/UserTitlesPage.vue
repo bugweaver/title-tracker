@@ -137,8 +137,32 @@ const getTitlesByStatus = (status: UserTitleStatus | 'all', category: TitleCateg
     return filtered;
 };
 
+const filterByFinishedPeriod = (sourceTitles: UserTitle[]) => {
+    if (activeYear.value === null && activeMonth.value === null) {
+        return sourceTitles;
+    }
+
+    return sourceTitles.filter((title) => {
+        if (!title.finished_at) {
+            return false;
+        }
+
+        const date = new Date(title.finished_at);
+
+        if (activeYear.value !== null && date.getFullYear() !== activeYear.value) {
+            return false;
+        }
+
+        if (activeMonth.value !== null && date.getMonth() !== activeMonth.value) {
+            return false;
+        }
+
+        return true;
+    });
+};
+
 const getCountByStatus = (status: UserTitleStatus | 'all', category: TitleCategory) => {
-      return getTitlesByStatus(status, category).length;
+      return filterByFinishedPeriod(getTitlesByStatus(status, category)).length;
 };
 
 const currentStatuses = computed(() => {
@@ -189,15 +213,9 @@ const monthOptions = computed(() => [
 
 const displayedTitles = computed(() => {
     // Create a copy to avoid mutating the source
-    let filtered = [...getTitlesByStatus(activeStatus.value, activeTab.value)];
-    
-    if (activeYear.value !== null) {
-        filtered = filtered.filter(t => t.finished_at && new Date(t.finished_at).getFullYear() === activeYear.value);
-    }
-    
-    if (activeMonth.value !== null) {
-        filtered = filtered.filter(t => t.finished_at && new Date(t.finished_at).getMonth() === activeMonth.value);
-    }
+    const filtered = filterByFinishedPeriod([
+        ...getTitlesByStatus(activeStatus.value, activeTab.value),
+    ]);
     
     
     // Sort by "Smart Date" (finished_at OR updated_at) desc, then by ID desc
