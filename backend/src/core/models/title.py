@@ -51,6 +51,7 @@ class UserTitle(IntIdPkMixin, Base):
     review_text: Mapped[str | None] = mapped_column(Text)
     is_spoiler: Mapped[bool] = mapped_column(default=False, server_default="false")
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    is_completed_100_percent: Mapped[bool] = mapped_column(default=False, server_default="false")
     
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())

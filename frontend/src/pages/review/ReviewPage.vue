@@ -141,6 +141,11 @@ const reviewToneStyle = computed<CSSProperties>(() => ({
 
 const scoreColor = (score: number | null) => score ? 'rgb(var(--review-tone-rgb))' : 'var(--color-text-muted)';
 
+const isCompleted100PercentGame = computed(() =>
+  entry.value?.title.category === 'game'
+  && entry.value.is_completed_100_percent
+);
+
 const formatDate = (dateStr: string | null | undefined) => {
   if (!dateStr) return null;
   const str = new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -196,7 +201,16 @@ const formatDate = (dateStr: string | null | undefined) => {
         <div class="detail-cards">
           <div class="detail-card review-accent-card">
             <span class="detail-label">Статус</span>
-            <span class="detail-value">{{ statusLabel(entry.status, entry.title.category) }}</span>
+            <span class="status-value-row">
+              <span class="detail-value">{{ statusLabel(entry.status, entry.title.category) }}</span>
+              <span
+                v-if="isCompleted100PercentGame"
+                class="completion-status-badge"
+                title="Игра пройдена на 100%"
+              >
+                100%
+              </span>
+            </span>
           </div>
           <div class="detail-card review-accent-card score-card" v-if="entry.score">
             <span class="detail-label">Оценка</span>
@@ -528,6 +542,25 @@ const formatDate = (dateStr: string | null | undefined) => {
 
 .detail-value.score {
   font-size: 24px;
+}
+
+.status-value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.completion-status-badge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  background: linear-gradient(135deg, rgb(124 58 237 / 0.95), rgb(217 70 239 / 0.95));
+  border: 1px solid rgb(168 85 247 / 0.55);
+  box-shadow: 0 8px 18px rgb(168 85 247 / 0.24);
 }
 
 /* Review text */

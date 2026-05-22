@@ -63,6 +63,7 @@ const selectedInitialData = ref<{
   review_text: string | null;
   is_spoiler?: boolean;
   finished_at?: string | null;
+  is_completed_100_percent?: boolean;
   screenshots?: { id: number; url: string; position: number }[];
 } | null>(null);
 
@@ -85,6 +86,7 @@ const handleEditTitle = (userTitle: any) => {
     review_text: userTitle.review_text,
     is_spoiler: userTitle.is_spoiler,
     finished_at: userTitle.finished_at,
+    is_completed_100_percent: userTitle.is_completed_100_percent,
     screenshots: userTitle.screenshots || [],
   };
   

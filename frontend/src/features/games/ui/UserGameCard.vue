@@ -21,6 +21,7 @@ interface UserTitle {
   score: number | null;
   review_text: string | null;
   is_spoiler?: boolean;
+  is_completed_100_percent: boolean;
   title: Title;
   finished_at?: string | null;
   screenshots?: Screenshot[];
@@ -98,6 +99,11 @@ const statusColorClass = computed(() => {
     if (s === 'dropped') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-700';
 });
+
+const isCompleted100PercentGame = computed(() =>
+  props.userTitle.title.category === TitleCategory.GAME
+  && props.userTitle.is_completed_100_percent
+);
 
 const isRevealed = ref(false);
 const isExpanded = ref(false);
@@ -215,6 +221,14 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
         >
           {{ statusLabel }}
         </span>
+
+        <span
+          v-if="isCompleted100PercentGame"
+          class="completion-badge text-xs px-2.5 py-1 rounded-full font-black"
+          title="Игра пройдена на 100%"
+        >
+          100% пройдено
+        </span>
         
         <button 
           v-if="editable"
@@ -329,6 +343,9 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   --game-card-border: 24%;
   --game-card-shadow: 0.08;
   --game-card-badge-tint: 10%;
+  --completion-badge-text: white;
+  --completion-badge-border: 0.45;
+  --completion-badge-shadow: 0.24;
 }
 
 :global([data-theme="dark"]) {
@@ -337,6 +354,9 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   --game-card-border: 30%;
   --game-card-shadow: 0.16;
   --game-card-badge-tint: 14%;
+  --completion-badge-text: #0f172a;
+  --completion-badge-border: 0.55;
+  --completion-badge-shadow: 0.28;
 }
 
 :global([data-theme="midnight"]) {
@@ -345,6 +365,9 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   --game-card-border: 34%;
   --game-card-shadow: 0.18;
   --game-card-badge-tint: 16%;
+  --completion-badge-text: #0f172a;
+  --completion-badge-border: 0.6;
+  --completion-badge-shadow: 0.3;
 }
 
 .game-card {
@@ -370,6 +393,14 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   background: color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-badge-tint), var(--color-surface-hover));
   border: 1px solid color-mix(in srgb, rgb(var(--card-tone-rgb)) 34%, var(--color-border));
   transition: background-color 450ms ease, border-color 450ms ease, color 450ms ease;
+}
+
+.completion-badge {
+  color: var(--completion-badge-text);
+  background:
+    linear-gradient(135deg, rgb(124 58 237 / 0.95), rgb(217 70 239 / 0.95));
+  border: 1px solid rgb(168 85 247 / var(--completion-badge-border));
+  box-shadow: 0 8px 18px rgb(168 85 247 / var(--completion-badge-shadow));
 }
 
 .screenshot-chip {

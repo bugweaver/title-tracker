@@ -39,6 +39,7 @@ export interface UserTitle {
   score: number | null;
   review_text: string | null;
   is_spoiler: boolean;
+  is_completed_100_percent: boolean;
   created_at: string;
   updated_at: string;
   title: Title;

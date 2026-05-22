@@ -23,6 +23,7 @@ class AddUserTitleRequest(BaseModel):
     review_text: str | None = None
     is_spoiler: bool = False
     finished_at: datetime | None = None
+    is_completed_100_percent: bool = False
 
     
 class UserTitleRead(BaseModel):
@@ -33,5 +34,6 @@ class UserTitleRead(BaseModel):
     score: float | None
     is_spoiler: bool
     finished_at: datetime | None
+    is_completed_100_percent: bool
     screenshots: list[ScreenshotRead] = []
 

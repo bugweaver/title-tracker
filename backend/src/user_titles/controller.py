@@ -70,12 +70,18 @@ class UserTitlesController(Controller):
 
         is_new = user_title is None
         has_meaningful_change = False
+        is_completed_100_percent = (
+            data.type == "game"
+            and data.status == UserTitleStatus.COMPLETED
+            and data.is_completed_100_percent
+        )
 
         if user_title:
             # Track meaningful changes before updating
             if (user_title.status != data.status
                 or user_title.score != data.score
-                or user_title.review_text != data.review_text):
+                or user_title.review_text != data.review_text
+                or user_title.is_completed_100_percent != is_completed_100_percent):
                 has_meaningful_change = True
 
             # Update existing
@@ -83,6 +89,7 @@ class UserTitlesController(Controller):
             user_title.score = data.score
             user_title.review_text = data.review_text
             user_title.is_spoiler = data.is_spoiler
+            user_title.is_completed_100_percent = is_completed_100_percent
 
             if data.finished_at:
                 user_title.finished_at = data.finished_at.replace(tzinfo=None)
@@ -106,7 +113,8 @@ class UserTitlesController(Controller):
                 score=data.score,
                 review_text=data.review_text,
                 is_spoiler=data.is_spoiler,
-                finished_at=finished_at
+                finished_at=finished_at,
+                is_completed_100_percent=is_completed_100_percent,
             )
             db_session.add(user_title)
 
@@ -146,6 +154,7 @@ class UserTitlesController(Controller):
             score=user_title.score,
             is_spoiler=user_title.is_spoiler,
             finished_at=user_title.finished_at,
+            is_completed_100_percent=user_title.is_completed_100_percent,
             screenshots=[
                 ScreenshotRead.model_validate(s)
                 for s in user_title.screenshots

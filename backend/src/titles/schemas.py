@@ -39,6 +39,7 @@ class UserTitleRead(UserTitleBase):
     created_at: datetime
     updated_at: datetime
     finished_at: datetime | None = None
+    is_completed_100_percent: bool = False
     title: TitleRead
     screenshots: list[ScreenshotRead] = []
     

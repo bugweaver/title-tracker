@@ -4,6 +4,7 @@ import { type TitleSearchResult, titlesApi, type Screenshot } from '@/shared/api
 import { UserTitleStatus, useTitleStore } from '@/entities/title';
 import GameReviewCompletionDate from './GameReviewCompletionDate.vue';
 import GameReviewFooter from './GameReviewFooter.vue';
+import GameReviewFullCompletionToggle from './GameReviewFullCompletionToggle.vue';
 import GameReviewHeader from './GameReviewHeader.vue';
 import GameReviewRating from './GameReviewRating.vue';
 import GameReviewScreenshots from './GameReviewScreenshots.vue';
@@ -23,6 +24,7 @@ const props = defineProps<{
     review_text: string | null;
     is_spoiler?: boolean;
     finished_at?: string | null;
+    is_completed_100_percent?: boolean;
     screenshots?: Screenshot[];
   } | null;
 }>();
@@ -37,6 +39,7 @@ const status = ref<UserTitleStatus>(UserTitleStatus.COMPLETED);
 const review = ref('');
 const selectedYear = ref<number | null>(null);
 const selectedMonth = ref<number | null>(null);
+const isCompleted100Percent = ref(false);
 const isSubmitting = ref(false);
 const isDeleting = ref(false);
 const showDeleteConfirm = ref(false);
@@ -54,6 +57,7 @@ watch(() => props.isOpen, (isOpen) => {
       status.value = props.initialData.status;
       rating.value = props.initialData.score || 0;
       review.value = props.initialData.review_text || '';
+      isCompleted100Percent.value = Boolean(props.initialData.is_completed_100_percent);
       existingScreenshots.value = props.initialData.screenshots ? [...props.initialData.screenshots] : [];
       if (props.initialData.finished_at) {
         const date = new Date(props.initialData.finished_at);
@@ -67,6 +71,7 @@ watch(() => props.isOpen, (isOpen) => {
       status.value = UserTitleStatus.COMPLETED;
       rating.value = 0;
       review.value = '';
+      isCompleted100Percent.value = false;
       existingScreenshots.value = [];
       const now = new Date();
       selectedYear.value = now.getFullYear();
@@ -77,6 +82,16 @@ watch(() => props.isOpen, (isOpen) => {
     pendingPreviews.value = [];
     showDeleteConfirm.value = false;
     deletedScreenshotIds.value = [];
+  }
+});
+
+const canMarkCompleted100Percent = computed(() =>
+  props.title?.type === 'game' && status.value === UserTitleStatus.COMPLETED
+);
+
+watch(canMarkCompleted100Percent, (canMark) => {
+  if (!canMark) {
+    isCompleted100Percent.value = false;
   }
 });
 
@@ -230,6 +245,7 @@ const handleSubmit = async () => {
       review_text: review.value || undefined,
       is_spoiler: /<[^<>]+>/.test(review.value),
       finished_at: finishedAtIso,
+      is_completed_100_percent: canMarkCompleted100Percent.value && isCompleted100Percent.value,
     });
 
     const userTitleId = result.id || props.initialData?.userTitleId;
@@ -320,7 +336,12 @@ const handleDelete = async () => {
           @update:year="selectedYear = $event"
         />
 
-        <GameReviewTextArea v-model="review" />
+        <GameReviewFullCompletionToggle
+          v-if="canMarkCompleted100Percent"
+          v-model="isCompleted100Percent"
+        />
+
+        <GameReviewTextArea v-model="review" class="pt-3" />
 
         <GameReviewScreenshots
           :existing-screenshots="existingScreenshots"

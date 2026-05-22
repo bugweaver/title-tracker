@@ -31,6 +31,7 @@ export interface AddUserTitleRequest {
   review_text?: string;
   is_spoiler?: boolean;
   finished_at?: string;
+  is_completed_100_percent?: boolean;
 }
 
 export const titlesApi = {
