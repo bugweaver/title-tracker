@@ -46,7 +46,7 @@ const isSideNavbar = computed(() => {
 })
 
 const navbarShellClass = computed(() => {
-  const base = 'fixed z-40 bg-background-soft border border-border shadow-lg shadow-black/5 rounded-xl transition-all duration-500 ease-in-out'
+  const base = 'fixed z-50 bg-background-soft border border-border shadow-lg shadow-black/5 rounded-xl transition-all duration-500 ease-in-out'
 
   switch (navbarPosition.value) {
     case 'bottom':
