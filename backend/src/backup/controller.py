@@ -1,3 +1,5 @@
+import json
+import logging
 from datetime import datetime
 from typing import Annotated, Any
 
@@ -6,16 +8,19 @@ from litestar.di import Provide
 from litestar.datastructures import UploadFile
 from litestar.enums import RequestEncodingType
 from litestar.params import Body
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import selectinload
 
 from core.models.title import Title, UserTitle
 from core.models.db_helper import get_db_session
-from core.models import User
+from core.models import User, TitleScreenshot
+from core.s3 import MAX_SCREENSHOTS_PER_ENTRY, parse_s3_key_from_url
 
 from .schemas import BackupItem, BackupResponse
-import json
+
+logger = logging.getLogger(__name__)
 
 class BackupController(Controller):
     path = "/backup"
@@ -36,6 +41,7 @@ class BackupController(Controller):
             select(UserTitle, Title)
             .join(Title, UserTitle.title_id == Title.id)
             .where(UserTitle.user_id == user.id)
+            .options(selectinload(UserTitle.screenshots))
         )
         result = await db_session.execute(stmt)
         rows = result.all()
@@ -55,6 +61,7 @@ class BackupController(Controller):
                 status=user_title.status,
                 score=user_title.score,
                 review_text=user_title.review_text,
+                screenshots=[s.url for s in user_title.screenshots],
             )
             backup_data.append(item.model_dump(mode="json"))
 
@@ -139,6 +146,41 @@ class BackupController(Controller):
             )
             
             await db_session.execute(stmt)
+
+            if item.screenshots is not None:
+                ut_stmt = select(UserTitle).where(
+                    UserTitle.user_id == user.id,
+                    UserTitle.title_id == title_id,
+                )
+                ut_result = await db_session.execute(ut_stmt)
+                user_title = ut_result.scalar_one()
+
+                await db_session.execute(
+                    delete(TitleScreenshot).where(
+                        TitleScreenshot.user_title_id == user_title.id
+                    )
+                )
+
+                for position, screenshot_url in enumerate(
+                    item.screenshots[:MAX_SCREENSHOTS_PER_ENTRY]
+                ):
+                    s3_key = parse_s3_key_from_url(screenshot_url)
+                    if s3_key is None:
+                        logger.warning(
+                            "Skipping screenshot at position %s for user_title %s",
+                            position,
+                            user_title.id,
+                        )
+                        continue
+                    db_session.add(
+                        TitleScreenshot(
+                            user_title_id=user_title.id,
+                            url=screenshot_url,
+                            s3_key=s3_key,
+                            position=position,
+                        )
+                    )
+
             processed_count += 1
 
         await db_session.commit()

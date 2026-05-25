@@ -1,15 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/entities/user'
 import { TITLE_CATEGORY_ROUTE_PATTERN, TITLE_STATUS_ROUTE_PATTERN } from '@/entities/title'
-import HomeView from '../views/HomeView.vue'
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      redirect: { name: 'my-titles' },
     },
     {
       path: '/about',

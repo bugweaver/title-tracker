@@ -13,6 +13,15 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 MAX_SCREENSHOTS_PER_ENTRY = 10
 
 
+def parse_s3_key_from_url(url: str) -> str | None:
+    """Extract S3 object key from a public URL ({endpoint}/{bucket}/{key})."""
+    marker = f"/{settings.s3.bucket_name}/"
+    if marker not in url:
+        logger.warning("Cannot parse s3_key from URL: %s", url)
+        return None
+    return url.split(marker, 1)[-1]
+
+
 class S3Service:
     def __init__(self):
         self._session = aioboto3.Session()

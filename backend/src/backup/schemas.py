@@ -15,6 +15,7 @@ class BackupItem(BaseModel):
     status: UserTitleStatus
     score: Optional[float] = None
     review_text: Optional[str] = None
+    screenshots: Optional[List[str]] = None
 
 class BackupResponse(BaseModel):
     message: str

@@ -1,12 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useNotificationStore } from '@/stores/notifications';
 import type { NotificationData } from '@/shared/api/notifications';
 
+const props = withDefaults(defineProps<{
+  dropdownPlacement?: 'bottom-end' | 'top-end' | 'right-start' | 'left-start';
+}>(), {
+  dropdownPlacement: 'bottom-end',
+});
+
 const router = useRouter();
 const store = useNotificationStore();
 const isOpen = ref(false);
+
+const dropdownClass = computed(() => [
+  'notification-dropdown',
+  `notification-dropdown--${props.dropdownPlacement}`,
+]);
 
 onMounted(() => {
   store.startPolling();
@@ -96,7 +107,7 @@ const categoryIcon = (cat: string) => {
     </Teleport>
 
     <Transition name="dropdown">
-      <div v-if="isOpen" class="notification-dropdown">
+      <div v-if="isOpen" :class="dropdownClass">
         <div class="notification-header">
           <h3>Уведомления</h3>
           <div class="header-actions">
@@ -225,8 +236,6 @@ const categoryIcon = (cat: string) => {
 
 .notification-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
   width: 380px;
   max-height: 480px;
   background: var(--color-background-soft);
@@ -237,6 +246,26 @@ const categoryIcon = (cat: string) => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.notification-dropdown--bottom-end {
+  top: calc(100% + 8px);
+  right: 0;
+}
+
+.notification-dropdown--top-end {
+  right: 0;
+  bottom: calc(100% + 8px);
+}
+
+.notification-dropdown--right-start {
+  top: 0;
+  left: calc(100% + 8px);
+}
+
+.notification-dropdown--left-start {
+  top: 0;
+  right: calc(100% + 8px);
 }
 
 .notification-header {
