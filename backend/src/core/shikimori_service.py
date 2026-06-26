@@ -7,8 +7,10 @@ from core.content import ContentProvider, ContentDTO
 logger = logging.getLogger(__name__)
 
 class ShikimoriService(ContentProvider):
+    SHIKIMORI_ORIGIN = "https://shikimori.io"
+
     def __init__(self):
-        self.base_url = "https://shikimori.one/api/graphql"
+        self.base_url = f"{self.SHIKIMORI_ORIGIN}/api/graphql"
         self.headers = {
             "User-Agent": "TitleTracker/1.0",
             "Content-Type": "application/json",
@@ -111,7 +113,7 @@ class ShikimoriService(ContentProvider):
 
             poster_url = item.get("poster", {}).get("originalUrl")
             if poster_url and not poster_url.startswith("http"):
-                poster_url = "https://shikimori.one" + poster_url
+                poster_url = self.SHIKIMORI_ORIGIN + poster_url
 
             genres = [g["russian"] for g in item.get("genres", []) if g.get("russian")]
 
