@@ -312,7 +312,7 @@ const formatDate = (dateStr: string | null | undefined) => {
 .review-page {
   max-width: 800px;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: 20px 12px 32px;
 }
 
 .loading-container {
@@ -650,6 +650,7 @@ const formatDate = (dateStr: string | null | undefined) => {
   font-size: 14px;
   cursor: pointer;
   transition: opacity 0.2s;
+  min-height: 44px;
 }
 
 .back-btn:hover {
@@ -661,6 +662,8 @@ const formatDate = (dateStr: string | null | undefined) => {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 16px;
+    padding: 16px;
   }
 
   .hero-info {
@@ -677,6 +680,16 @@ const formatDate = (dateStr: string | null | undefined) => {
 
   .detail-cards {
     flex-direction: column;
+  }
+
+  .review-text-section,
+  .screenshots-section {
+    padding: 16px;
+  }
+
+  .error-container {
+    padding: 48px 16px;
+    text-align: center;
   }
 }
 
@@ -730,8 +743,8 @@ const formatDate = (dateStr: string | null | undefined) => {
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: rgba(255,255,255,0.1);
   border: none;
@@ -793,5 +806,41 @@ const formatDate = (dateStr: string | null | undefined) => {
   max-height: 90vh;
   object-fit: contain;
   border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .lightbox-close {
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+  }
+
+  .lightbox-nav {
+    top: auto;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    transform: none;
+  }
+
+  .lightbox-prev {
+    left: calc(50% - 58px);
+  }
+
+  .lightbox-next {
+    right: calc(50% - 58px);
+  }
+
+  .lightbox-content {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 120px);
+  }
+
+  .lightbox-img {
+    max-height: calc(100dvh - 150px);
+  }
+}
+
+@media (min-width: 641px) {
+  .review-page {
+    padding-top: 32px;
+  }
 }
 </style>

@@ -78,6 +78,12 @@
    ========================================== */
 :root,
 [data-theme="light"] {
+    --color-text-primary: var(--theme-text);
+    --color-text-tertiary: var(--theme-text-muted);
+    --color-bg-secondary: var(--theme-bg-soft);
+    --color-bg-tertiary: var(--theme-bg-mute);
+    --color-border-primary: var(--theme-border);
+    --touch-target: 44px;
     --theme-primary-50: #ecfdf5;
     --theme-primary-100: #d1fae5;
     --theme-primary-200: #a7f3d0;
@@ -209,4 +215,6 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-wrap: break-word;
+    -webkit-tap-highlight-color: transparent;
 }

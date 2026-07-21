@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onUnmounted } from 'vue';
 import { Cropper, CircleStencil } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 import { X } from 'lucide-vue-next';
@@ -17,6 +17,7 @@ const emit = defineEmits<{
 const imageUrl = ref<string | null>(null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const cropper = ref<any>(null);
+let previousBodyOverflow = '';
 
 watch(() => props.imageFile, (file) => {
   if (file) {
@@ -28,6 +29,20 @@ watch(() => props.imageFile, (file) => {
     imageUrl.value = null;
   }
 }, { immediate: true });
+
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen) {
+    previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = previousBodyOverflow;
+  }
+});
+
+onUnmounted(() => {
+  document.body.style.overflow = previousBodyOverflow;
+  if (imageUrl.value) URL.revokeObjectURL(imageUrl.value);
+});
 
 const handleSave = () => {
     if (cropper.value) {
@@ -49,18 +64,18 @@ const handleClose = () => {
 </script>
 
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div class="bg-surface border border-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+  <div v-if="isOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4">
+    <div class="flex h-[100dvh] w-full max-w-lg flex-col overflow-hidden bg-surface shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:rounded-xl sm:border sm:border-border">
       <!-- Header -->
-      <div class="flex items-center justify-between p-4 border-b border-border">
-        <h2 class="text-xl font-bold text-text">Редактирование фото</h2>
-        <button @click="handleClose" class="text-text-secondary hover:text-text transition-colors">
+      <div class="flex items-center justify-between border-b border-border px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-4">
+        <h2 class="text-lg font-bold text-text sm:text-xl">Редактирование фото</h2>
+        <button @click="handleClose" class="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-hover hover:text-text" aria-label="Закрыть">
           <X :size="24" />
         </button>
       </div>
 
       <!-- Cropper Area -->
-      <div class="p-4 bg-background-soft flex-grow overflow-hidden flex items-center justify-center">
+      <div class="flex min-h-0 flex-grow items-center justify-center overflow-hidden bg-background-soft p-3 sm:p-4">
         <Cropper
           ref="cropper"
           class="cropper-wrapper"
@@ -73,16 +88,16 @@ const handleClose = () => {
       </div>
 
       <!-- Footer -->
-      <div class="p-4 border-t border-border flex justify-end gap-3 bg-surface">
+      <div class="grid grid-cols-2 gap-3 border-t border-border bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex sm:justify-end">
         <button 
           @click="handleClose"
-          class="px-4 py-2 text-text-secondary hover:text-text font-medium transition-colors"
+          class="min-h-11 px-4 py-2 font-medium text-text-secondary transition-colors hover:text-text"
         >
           Отмена
         </button>
         <button 
           @click="handleSave"
-          class="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-lg transition-colors"
+          class="min-h-11 rounded-lg bg-primary-500 px-6 py-2 font-bold text-white transition-colors hover:bg-primary-600"
         >
           Сохранить
         </button>
@@ -93,7 +108,7 @@ const handleClose = () => {
 
 <style scoped>
 .cropper-wrapper {
-  height: 400px;
+  height: min(400px, 55dvh);
   width: 100%;
   background-color: #000;
 }

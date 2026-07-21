@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onUnmounted } from 'vue';
 import { useTheme } from '@/shared/composables';
 import AppInput from '@/shared/ui/AppInput.vue';
 import AppButton from '@/shared/ui/AppButton.vue';
@@ -21,10 +21,13 @@ const searchQuery = ref('');
 const results = ref<TitleSearchResult[]>([]);
 const isLoading = ref(false);
 const activeTab = ref<TitleType>('game');
+let previousBodyOverflow = '';
 
 // Set active tab from prop when opening
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
+     previousBodyOverflow = document.body.style.overflow;
+     document.body.style.overflow = 'hidden';
      if (props.activeCategory && ['game', 'movie', 'tv', 'anime'].includes(props.activeCategory)) {
         activeTab.value = props.activeCategory as TitleType;
      } else {
@@ -33,7 +36,13 @@ watch(() => props.isOpen, (newVal) => {
      // Clear previous results when opening
      results.value = [];
      searchQuery.value = '';
+  } else {
+     document.body.style.overflow = previousBodyOverflow;
   }
+});
+
+onUnmounted(() => {
+  document.body.style.overflow = previousBodyOverflow;
 });
 
 // Clear results when tab changes
@@ -85,44 +94,44 @@ const getTitleLabel = computed(() => {
 </script>
 
 <template>
-<div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click="handleClose">
-    <div class="w-full max-w-2xl bg-zinc-900 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]" @click.stop>
+<div v-if="isOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4" @click="handleClose">
+    <div class="flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-surface shadow-2xl sm:h-auto sm:max-h-[85dvh] sm:rounded-xl sm:border sm:border-border" @click.stop>
       <!-- Header -->
-      <div class="p-4 border-b border-zinc-800 flex items-center justify-between">
-        <h2 class="text-xl font-bold text-white">
+      <div class="flex items-center justify-between border-b border-border px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-4">
+        <h2 class="text-lg font-bold text-text sm:text-xl">
           Добавить {{ getTitleLabel }}
         </h2>
-        <button @click="handleClose" class="text-zinc-400 hover:text-white">
+        <button @click="handleClose" class="flex h-11 w-11 items-center justify-center rounded-lg text-xl text-text-secondary hover:bg-surface-hover hover:text-text" aria-label="Закрыть">
           ✕
         </button>
       </div>
 
       <!-- Tabs -->
-      <div class="flex border-b border-zinc-800">
+      <div class="flex shrink-0 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button 
-          class="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
-          :class="activeTab === 'game' ? 'border-primary-500 text-white' : 'border-transparent text-zinc-400 hover:text-white'"
+          class="min-h-11 min-w-24 flex-1 shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'game' ? 'border-primary-500 text-text' : 'border-transparent text-text-secondary hover:text-text'"
           @click="activeTab = 'game'"
         >
           Игры
         </button>
         <button 
-          class="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
-          :class="activeTab === 'movie' ? 'border-primary-500 text-white' : 'border-transparent text-zinc-400 hover:text-white'"
+          class="min-h-11 min-w-24 flex-1 shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'movie' ? 'border-primary-500 text-text' : 'border-transparent text-text-secondary hover:text-text'"
           @click="activeTab = 'movie'"
         >
           Фильмы
         </button>
         <button 
-          class="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
-          :class="activeTab === 'tv' ? 'border-primary-500 text-white' : 'border-transparent text-zinc-400 hover:text-white'"
+          class="min-h-11 min-w-24 flex-1 shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'tv' ? 'border-primary-500 text-text' : 'border-transparent text-text-secondary hover:text-text'"
           @click="activeTab = 'tv'"
         >
           Сериалы
         </button>
         <button 
-          class="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
-          :class="activeTab === 'anime' ? 'border-primary-500 text-white' : 'border-transparent text-zinc-400 hover:text-white'"
+          class="min-h-11 min-w-24 flex-1 shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'anime' ? 'border-primary-500 text-text' : 'border-transparent text-text-secondary hover:text-text'"
           @click="activeTab = 'anime'"
         >
           Аниме
@@ -139,29 +148,29 @@ const getTitleLabel = computed(() => {
       </div>
 
       <!-- Results -->
-      <div class="flex-1 overflow-y-auto p-4 space-y-2 min-h-[300px]">
-        <div v-if="isLoading" class="text-center py-8 text-zinc-400">
+      <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:min-h-[300px] sm:p-4">
+        <div v-if="isLoading" class="py-8 text-center text-text-muted">
           Searching...
         </div>
         
-        <div v-else-if="results.length === 0 && searchQuery" class="text-center py-8 text-zinc-400">
+        <div v-else-if="results.length === 0 && searchQuery" class="py-8 text-center text-text-muted">
           No titles found.
         </div>
 
         <div 
           v-for="title in results" 
           :key="title.external_id + title.type" 
-          class="flex items-center gap-4 p-3 rounded-lg hover:bg-zinc-800 transition-colors group"
+          class="group flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-surface-hover sm:gap-4 sm:p-3"
         >
           <!-- Cover -->
-          <div class="w-12 h-16 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
+          <div class="h-16 w-12 flex-shrink-0 overflow-hidden rounded bg-background-mute">
             <img 
               v-if="title.poster_url" 
               :src="title.poster_url" 
               :alt="title.title" 
               class="w-full h-full object-cover"
             />
-            <div v-else class="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
+            <div v-else class="flex h-full w-full items-center justify-center text-xs text-text-muted">
               No Img
             </div>
           </div>
@@ -169,12 +178,12 @@ const getTitleLabel = computed(() => {
           <!-- Info -->
           <div class="flex-1 min-w-0">
             <div class="flex items-baseline gap-2">
-              <h3 class="font-bold text-white truncate">{{ title.title }}</h3>
-              <span v-if="title.release_year" class="text-xs text-zinc-400">
+              <h3 class="truncate font-bold text-text">{{ title.title }}</h3>
+              <span v-if="title.release_year" class="shrink-0 text-xs text-text-muted">
                 {{ title.release_year }}
               </span>
             </div>
-            <div class="text-xs text-zinc-400 truncate">
+            <div class="truncate text-xs text-text-muted">
                {{ title.original_title }}
             </div>
           </div>
@@ -183,7 +192,7 @@ const getTitleLabel = computed(() => {
           <AppButton 
             variant="ghost" 
             size="sm"
-            class="opacity-0 group-hover:opacity-100 transition-opacity"
+            class="shrink-0 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
             title="Добавить"
             @click="$emit('select', title)"
           >

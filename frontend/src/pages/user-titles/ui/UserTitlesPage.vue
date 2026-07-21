@@ -243,9 +243,9 @@ watch(activeTab, () => {
 </script>
 
 <template>
-  <div class="max-w-screen-xl mx-auto p-8 flex flex-col gap-7">
-    <header class="flex items-center gap-8 p-8 bg-surface border border-border rounded-xl shadow-sm">
-       <div class="w-[100px] h-[100px] rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-4xl font-bold border-4 border-background shadow-[0_0_0_2px_var(--color-primary-200)] overflow-hidden flex-shrink-0">
+  <div class="mx-auto flex max-w-screen-xl flex-col gap-5 p-3 sm:gap-7 sm:p-6 lg:p-8">
+    <header class="flex flex-col items-center gap-4 rounded-xl border border-border bg-surface p-4 text-center shadow-sm sm:flex-row sm:gap-8 sm:p-8 sm:text-left">
+       <div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-primary-100 text-3xl font-bold text-primary-600 shadow-[0_0_0_2px_var(--color-primary-200)] sm:h-[100px] sm:w-[100px] sm:text-4xl">
         <img 
           v-if="user?.avatar_url" 
           :src="user.avatar_url" 
@@ -255,13 +255,13 @@ watch(activeTab, () => {
         <span v-else>{{ user?.login ? user.login.substring(0, 1).toUpperCase() : '#' }}</span>
       </div>
       
-      <div class="flex-grow">
+      <div class="min-w-0 flex-grow">
         <div class="mb-4 leading-tight">
-          <h1 class="text-3xl font-bold text-text m-0">{{ user?.name || user?.login || `Пользователь #${userId}` }}</h1>
+          <h1 class="m-0 break-words text-2xl font-bold text-text sm:text-3xl">{{ user?.name || user?.login || `Пользователь #${userId}` }}</h1>
           <p v-if="user?.name" class="text-text-secondary">@{{ user.login }}</p>
         </div>
         
-        <div class="flex gap-8">
+        <div class="flex justify-center gap-5 sm:justify-start sm:gap-8">
           <div class="flex flex-col">
             <span class="text-lg font-bold text-text">{{ titles.length }}</span>
             <span class="text-sm text-text-muted">Тайтлов</span>
@@ -289,12 +289,12 @@ watch(activeTab, () => {
     </header>
 
     <div class="flex flex-col gap-6">
-      <div class="flex gap-2 border-b border-border items-center">
+      <div class="flex items-center gap-1 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2">
         <RouterLink
           v-for="tab in tabs"
           :key="tab.id"
           :to="getTabRoute(tab.id)"
-          class="px-4 py-2 -mb-px border-b-2 font-medium transition-colors duration-200 cursor-pointer text-base"
+          class="-mb-px min-h-11 shrink-0 cursor-pointer whitespace-nowrap border-b-2 px-4 py-2 font-medium transition-colors duration-200"
           :class="[
             activeTab === tab.id
               ? 'border-primary-500 text-primary-500'
@@ -305,12 +305,12 @@ watch(activeTab, () => {
         </RouterLink>
       </div>
 
-      <div class="flex gap-2 flex-wrap">
+      <div class="flex flex-wrap gap-2">
         <RouterLink
           v-for="status in currentStatuses"
           :key="status.id"
           :to="getStatusRoute(status.id)"
-          class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer"
+          class="flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
           :class="[
             activeStatus === status.id
               ? 'bg-primary-100 text-primary-700'
@@ -318,22 +318,22 @@ watch(activeTab, () => {
           ]"
         >
           {{ status.label }}
-          <span class="ml-1.5 opacity-70 text-xs">{{ status.count }}</span>
+          <span class="text-xs opacity-70">{{ status.count }}</span>
         </RouterLink>
       </div>
 
-      <div v-if="availableYears.length > 0" class="flex gap-2">
+      <div v-if="availableYears.length > 0" class="grid grid-cols-2 gap-2 sm:flex">
          <AppSelect
            v-model="activeYear"
            :options="yearOptions"
            placeholder="Все годы"
-           class="w-48"
+           class="min-w-0 sm:w-48"
          />
          <AppSelect
            v-model="activeMonth"
            :options="monthOptions"
            placeholder="Все месяцы"
-           class="w-48"
+           class="min-w-0 sm:w-48"
          />
       </div>
     </div>
@@ -352,7 +352,7 @@ watch(activeTab, () => {
 
     <div v-else class="
         flex flex-col items-center justify-center
-        py-16 px-8 bg-background-soft rounded-lg
+        py-12 px-4 sm:py-16 sm:px-8 bg-background-soft rounded-lg
         border border-border text-center
       ">
       <p class="text-xl text-text mb-2">Список тайтлов пуст</p>
@@ -370,10 +370,17 @@ watch(activeTab, () => {
   flex-shrink: 0;
   align-self: center;
   white-space: nowrap;
+  min-height: 44px;
   transition: all 0.2s;
   background: var(--color-primary-500);
   border: 1px solid var(--color-primary-500);
   color: white;
+}
+
+@media (max-width: 639px) {
+  .follow-btn {
+    width: 100%;
+  }
 }
 
 .follow-btn:hover {

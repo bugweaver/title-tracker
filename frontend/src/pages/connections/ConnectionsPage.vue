@@ -107,7 +107,7 @@ watch([userId, activeTab], fetchData);
 .connections-page {
   max-width: 640px;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: 20px 16px 32px;
 }
 
 .back-link {
@@ -116,7 +116,8 @@ watch([userId, activeTab], fetchData);
   color: var(--color-text-muted);
   font-size: 14px;
   cursor: pointer;
-  padding: 4px 0;
+  min-height: 44px;
+  padding: 10px 0;
   margin-bottom: 20px;
   transition: color 0.15s;
 }
@@ -161,6 +162,8 @@ watch([userId, activeTab], fetchData);
   font-weight: 700;
   color: var(--color-text);
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .tabs {
@@ -184,6 +187,7 @@ watch([userId, activeTab], fetchData);
   color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 44px;
 }
 
 .tab:hover {
@@ -263,16 +267,29 @@ watch([userId, activeTab], fetchData);
 .user-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .user-name {
   font-weight: 600;
   font-size: 15px;
   color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-login {
   font-size: 13px;
   color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .connections-page {
+    padding-top: 32px;
+  }
 }
 </style>

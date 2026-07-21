@@ -185,8 +185,8 @@ const categoryIcon = (cat: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 6px;
   background: transparent;
   border: 1px solid var(--color-border);
@@ -293,6 +293,7 @@ const categoryIcon = (cat: string) => {
   padding: 4px 8px;
   border-radius: 6px;
   transition: background 0.15s;
+  min-height: 40px;
 }
 
 .mark-all-btn:hover {
@@ -314,6 +315,7 @@ const categoryIcon = (cat: string) => {
   padding: 4px 8px;
   border-radius: 6px;
   transition: background 0.15s;
+  min-height: 40px;
 }
 
 .clear-btn:hover {
@@ -448,5 +450,47 @@ const categoryIcon = (cat: string) => {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+@media (max-width: 767px) {
+  .notification-dropdown {
+    position: fixed;
+    top: calc(4rem + env(safe-area-inset-top));
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-height: calc(100dvh - 5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    border-radius: 12px;
+    z-index: 90;
+  }
+
+  .notification-dropdown--top-end,
+  .notification-dropdown--right-start,
+  .notification-dropdown--left-start {
+    top: calc(4rem + env(safe-area-inset-top));
+    right: 8px;
+    bottom: auto;
+    left: 8px;
+  }
+
+  .notification-header {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .notification-list {
+    max-height: calc(100dvh - 10rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .notification-item {
+    min-height: 64px;
+    padding: 12px;
+  }
 }
 </style>

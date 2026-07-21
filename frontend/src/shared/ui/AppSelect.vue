@@ -54,7 +54,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="relative w-full min-w-[200px]">
+  <div ref="containerRef" class="relative w-full min-w-0 sm:min-w-[200px]">
     <label 
       v-if="label" 
       class="block text-sm font-medium text-text mb-2"
@@ -65,7 +65,7 @@ onUnmounted(() => {
     <button
       type="button"
       @click="toggle"
-      class="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg
+      class="flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-sm
              bg-surface text-text border border-border
              hover:border-primary-500 transition-colors duration-200 outline-none
              focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
@@ -94,14 +94,14 @@ onUnmounted(() => {
     >
       <div 
         v-if="isOpen"
-        class="absolute z-50 w-full mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden flex flex-col"
+        class="absolute z-50 mt-1 flex max-h-[min(15rem,50dvh)] w-full max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
       >
         <ul class="max-h-60 overflow-auto py-1 custom-scrollbar">
           <li
             v-for="option in props.options"
             :key="String(option.value)"
             @click="select(option.value)"
-            class="px-3 py-2 text-sm text-text cursor-pointer hover:bg-primary-500/10 hover:text-primary-500 flex items-center justify-between transition-colors"
+            class="flex min-h-11 cursor-pointer items-center justify-between px-3 py-2 text-sm text-text transition-colors hover:bg-primary-500/10 hover:text-primary-500"
             :class="{ 'bg-primary-500/5 text-primary-500 font-medium': option.value === modelValue }"
           >
             <span class="truncate">{{ option.label }}</span>

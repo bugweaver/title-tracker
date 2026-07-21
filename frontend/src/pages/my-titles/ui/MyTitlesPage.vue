@@ -298,10 +298,10 @@ const activeSearchCategory = computed(() => {
 </script>
 
 <template>
-  <div class="max-w-screen-xl mx-auto p-8 flex flex-col gap-7">
-    <header class="flex items-center gap-8 p-8 bg-surface border border-border rounded-xl shadow-sm">
+  <div class="mx-auto flex max-w-screen-xl flex-col gap-5 p-3 sm:gap-7 sm:p-6 lg:p-8">
+    <header class="flex flex-col items-center gap-4 rounded-xl border border-border bg-surface p-4 text-center shadow-sm sm:flex-row sm:gap-8 sm:p-8 sm:text-left">
       <div 
-        class="relative w-[100px] h-[100px] rounded-full group cursor-pointer"
+        class="group relative h-20 w-20 shrink-0 cursor-pointer rounded-full sm:h-[100px] sm:w-[100px]"
         @click="triggerAvatarUpload"
       >
         <div class="w-full h-full rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-4xl font-bold border-4 border-background shadow-[0_0_0_2px_var(--color-primary-200)] overflow-hidden">
@@ -315,7 +315,7 @@ const activeSearchCategory = computed(() => {
         </div>
         
         <!-- Hover Overlay -->
-        <div class="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="17 8 12 3 7 8"></polyline>
@@ -332,13 +332,13 @@ const activeSearchCategory = computed(() => {
         />
       </div>
       
-      <div>
+      <div class="min-w-0">
         <div class="mb-4 leading-tight">
-          <h1 class="text-3xl font-bold text-text m-0">{{ user?.name || user?.login }}</h1>
+          <h1 class="m-0 break-words text-2xl font-bold text-text sm:text-3xl">{{ user?.name || user?.login }}</h1>
           <p class="text-base font-medium text-text-secondary">@{{ user?.login }}</p>
         </div>
         
-        <div class="flex gap-8">
+        <div class="flex justify-center gap-5 sm:justify-start sm:gap-8">
           <div class="flex flex-col">
             <span class="text-lg font-bold text-text">{{ titleStore.titles.length }}</span>
             <span class="text-sm text-text-muted">Тайтлов</span>
@@ -356,12 +356,12 @@ const activeSearchCategory = computed(() => {
     </header>
 
     <div class="flex flex-col gap-6">
-      <div class="flex gap-2 border-b border-border items-center">
+      <div class="flex items-center gap-1 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2">
         <RouterLink
           v-for="tab in tabs"
           :key="tab.id"
           :to="getTabRoute(tab.id)"
-          class="px-4 py-2 -mb-px border-b-2 font-medium transition-colors duration-200 cursor-pointer text-base"
+          class="-mb-px min-h-11 shrink-0 cursor-pointer whitespace-nowrap border-b-2 px-4 py-2 font-medium transition-colors duration-200"
           :class="[
             activeTab === tab.id
               ? 'border-primary-500 text-primary-500'
@@ -372,43 +372,45 @@ const activeSearchCategory = computed(() => {
         </RouterLink>
       </div>
 
-      <div class="flex gap-2 flex-wrap items-center">
-        <RouterLink
-          v-for="status in currentStatuses"
-          :key="status.id"
-          :to="getStatusRoute(status.id)"
-          class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer"
-          :class="[
-            activeStatus === status.id
-              ? 'bg-primary-100 text-primary-700'
-              : 'text-text-secondary hover:bg-background-soft hover:text-text'
-          ]"
-        >
-          {{ status.label }}
-          <span class="ml-1.5 opacity-70 text-xs">{{ status.count }}</span>
-        </RouterLink>
+      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div class="flex flex-wrap gap-2">
+          <RouterLink
+            v-for="status in currentStatuses"
+            :key="status.id"
+            :to="getStatusRoute(status.id)"
+            class="flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="[
+              activeStatus === status.id
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-text-secondary hover:bg-background-soft hover:text-text'
+            ]"
+          >
+            {{ status.label }}
+            <span class="text-xs opacity-70">{{ status.count }}</span>
+          </RouterLink>
+        </div>
 
         <!-- Time Filters -->
-        <div class="flex gap-2 ml-auto">
+        <div class="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto">
             <AppSelect
                 v-model="selectedYear"
                 :options="availableYearsOptions"
                 placeholder="Все года"
-                class="w-32"
+                class="min-w-0 sm:w-32"
             />
             
             <AppSelect
                 v-model="selectedMonth"
                 :options="monthOptions"
                 placeholder="Все месяцы"
-                class="w-36"
+                class="min-w-0 sm:w-36"
             />
         </div>
       </div>
 
       <div class="flex">
         <button
-          class="px-4 py-2 bg-primary-500 text-text-dark-1 rounded-lg hover:bg-primary-600 transition-colors font-medium text-sm cursor-pointer"
+          class="min-h-11 w-full cursor-pointer rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:w-auto"
           @click="isSearchModalOpen = true"
         >
           {{ addButtonLabel }}
@@ -432,7 +434,7 @@ const activeSearchCategory = computed(() => {
 
     <div v-else class="
         flex flex-col items-center justify-center
-        py-16 px-8 bg-background-soft rounded-lg
+        py-12 px-4 sm:py-16 sm:px-8 bg-background-soft rounded-lg
         border border-border text-center
       ">
       <p class="text-xl text-text mb-2">Список тайтлов пуст</p>

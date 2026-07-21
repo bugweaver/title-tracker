@@ -28,15 +28,15 @@ defineEmits<{
       </div>
       <p class="text-sm text-[var(--color-text-secondary)]">Тайтл, оценка, отзыв и скриншоты будут удалены безвозвратно.</p>
     </div>
-    <div class="flex justify-end gap-2">
+    <div class="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
       <button
         :disabled="isDeleting"
-        class="px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] rounded-lg transition-colors cursor-pointer"
+        class="min-h-11 cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
         @click="$emit('update:showDeleteConfirm', false)"
       >Отмена</button>
       <button
         :disabled="isDeleting"
-        class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
+        class="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-50"
         @click="$emit('delete')"
       >
         <svg v-if="isDeleting" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -48,15 +48,15 @@ defineEmits<{
     </div>
   </div>
 
-  <div v-else class="game-review-footer p-4 flex justify-between">
-    <div>
+  <div v-else class="game-review-footer flex flex-col-reverse gap-3 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:justify-between">
+    <div class="flex">
       <button
         v-if="hasUserTitle"
-        class="px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+        class="min-h-11 w-full cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 sm:w-auto"
         @click="$emit('update:showDeleteConfirm', true)"
       >Удалить</button>
     </div>
-    <div class="flex gap-3">
+    <div class="grid grid-cols-2 gap-3 sm:flex">
       <AppButton variant="ghost" @click="$emit('close')">Отмена</AppButton>
       <AppButton :loading="isSubmitting || isUploadingScreenshots" @click="$emit('submit')">
         {{ isUploadingScreenshots ? 'Загрузка...' : (hasUserTitle ? 'Обновить' : 'Добавить') }}

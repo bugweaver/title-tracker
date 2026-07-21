@@ -21,7 +21,7 @@ const handleExport = async () => {
         // Use default filename as we can't easily get headers from getBlob currently 
         // without changing the signature. 
         // Or we can just generate it client side which is fine.
-        let filename = `backup_${new Date().toISOString().split('T')[0]}.txt`;
+        const filename = `backup_${new Date().toISOString().split('T')[0]}.txt`;
         
         link.setAttribute('download', filename);
         document.body.appendChild(link);
@@ -76,9 +76,9 @@ const handleImport = async (file: File) => {
 </script>
 
 <template>
-    <div class="bg-background-soft rounded-xl border border-border p-6">
+    <div class="rounded-xl border border-border bg-background-soft p-4 sm:p-6">
         <h2 class="text-xl font-bold mb-4 text-text">Резервное копирование</h2>
-        <p class="text-text-muted p-2">
+        <p class="break-words py-2 text-text-muted sm:p-2">
             Вы можете выгрузить всю вашу библиотеку в файл для хранения,
             или загрузить её обратно. При импорте существующие записи будут обновлены.
             В бэкап также попадают ссылки на скриншоты — они восстановятся при импорте,
@@ -89,13 +89,13 @@ const handleImport = async (file: File) => {
             <button 
                 @click="handleExport" 
                 :disabled="isExporting"
-                class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                class="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-white transition-colors hover:bg-primary-600 disabled:opacity-50 sm:w-auto"
             >
                 <span v-if="isExporting" class="animate-spin">⏳</span>
                 <span>{{ isExporting ? 'Экспорт...' : 'Скачать резервную копию' }}</span>
             </button>
             
-            <div class="relative">
+            <div class="relative w-full sm:w-auto">
                 <input 
                     type="file" 
                     ref="fileInput" 
@@ -106,7 +106,7 @@ const handleImport = async (file: File) => {
                 <button 
                     @click="triggerImport" 
                     :disabled="isImporting"
-                    class="px-4 py-2 border border-border text-text rounded-lg hover:bg-surface-hover disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                    class="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-text transition-colors hover:bg-surface-hover disabled:opacity-50"
                 >
                     <span v-if="isImporting" class="animate-spin">⏳</span>
                     <span>{{ isImporting ? 'Импорт...' : 'Загрузить из файла' }}</span>

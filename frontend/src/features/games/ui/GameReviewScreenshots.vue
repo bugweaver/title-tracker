@@ -59,7 +59,7 @@ const onDragLeave = () => {
       <span class="text-[var(--color-text-muted)]">({{ totalScreenshots }}/{{ maxScreenshots }})</span>
     </label>
 
-    <div v-if="existingScreenshots.length > 0" class="grid grid-cols-3 gap-2">
+    <div v-if="existingScreenshots.length > 0" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
       <div
         v-for="screenshot in existingScreenshots"
         :key="screenshot.id"
@@ -73,7 +73,7 @@ const onDragLeave = () => {
         />
         <div
           v-if="!deletedScreenshotIds.includes(screenshot.id)"
-          class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity md:group-hover:opacity-100"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
@@ -84,7 +84,7 @@ const onDragLeave = () => {
         </div>
         <button
           v-if="!deletedScreenshotIds.includes(screenshot.id)"
-          class="absolute top-1 right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs z-10"
+          class="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-red-600 text-sm text-white opacity-100 shadow-lg transition-opacity md:h-9 md:w-9 md:opacity-0 md:group-hover:opacity-100"
           title="Удалить"
           @click.stop="$emit('deleteExisting', screenshot)"
         >✕</button>
@@ -95,7 +95,7 @@ const onDragLeave = () => {
       </div>
     </div>
 
-    <div v-if="pendingPreviews.length > 0" class="grid grid-cols-3 gap-2">
+    <div v-if="pendingPreviews.length > 0" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
       <div
         v-for="(preview, index) in pendingPreviews"
         :key="'pending-' + index"
@@ -106,7 +106,7 @@ const onDragLeave = () => {
           class="w-full h-full object-cover cursor-pointer"
           @click="$emit('openPreview', preview)"
         />
-        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity md:group-hover:opacity-100">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -115,7 +115,7 @@ const onDragLeave = () => {
           </svg>
         </div>
         <button
-          class="absolute top-1 right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs z-10"
+          class="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-red-600 text-sm text-white opacity-100 shadow-lg transition-opacity md:h-9 md:w-9 md:opacity-0 md:group-hover:opacity-100"
           title="Убрать"
           @click.stop="$emit('removePending', index)"
         >✕</button>

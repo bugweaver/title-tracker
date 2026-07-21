@@ -13,7 +13,13 @@ import { RegisterForm } from '@/features/auth';
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
+  min-height: 100dvh;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .auth-page {
+    padding: 2rem;
+  }
 }
 </style>

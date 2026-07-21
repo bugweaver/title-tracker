@@ -75,7 +75,7 @@ const statusColorStyle = (status: UserTitleStatus): CSSProperties => {
       <button
         v-for="statusOption in statuses"
         :key="statusOption.id"
-        class="status-button px-3 py-1.5 rounded-full text-sm font-medium"
+        class="status-button min-h-11 rounded-full px-3 py-1.5 text-sm font-medium"
         :class="{ 'status-button--active': modelValue === statusOption.id }"
         :style="statusColorStyle(statusOption.id)"
         :data-status="statusOption.id"

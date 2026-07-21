@@ -64,10 +64,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-screen-xl mx-auto p-8 flex flex-col gap-8">
+  <div class="mx-auto flex max-w-screen-xl flex-col gap-5 p-4 sm:gap-8 sm:p-6 lg:p-8">
     
     <div class="flex flex-col gap-4">
-      <h1 class="text-3xl font-bold text-text">Сообщество</h1>
+      <h1 class="text-2xl font-bold text-text sm:text-3xl">Сообщество</h1>
       <p class="text-text-muted">Ищите других пользователей и смотрите их коллекции</p>
     </div>
 
@@ -76,7 +76,7 @@ onMounted(() => {
       <input 
         v-model="searchQuery" 
         placeholder="Поиск пользователей..." 
-        class="w-full px-4 py-2 bg-background-soft border border-border rounded-lg text-text focus:outline-none focus:border-primary-500 transition-colors"
+        class="min-h-11 w-full rounded-lg border border-border bg-background-soft px-4 py-2 text-base text-text transition-colors focus:border-primary-500 focus:outline-none"
       />
     </div>
 
@@ -116,7 +116,7 @@ onMounted(() => {
         
 
     
-    <div v-else class="py-12 text-center text-[var(--color-text-tertiary)] bg-[var(--color-bg-secondary)] rounded-xl border border-[var(--color-border-primary)] border-dashed">
+    <div v-else class="rounded-xl border border-dashed border-border bg-background-soft py-12 text-center text-text-muted">
       Пользователи не найдены
     </div>
 

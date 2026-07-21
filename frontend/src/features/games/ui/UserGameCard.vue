@@ -194,12 +194,12 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
 
 <template>
   <div 
-    class="game-card flex gap-5 p-5 rounded-xl cursor-pointer"
+    class="game-card flex cursor-pointer flex-col gap-4 rounded-xl p-4 sm:flex-row sm:gap-5 sm:p-5"
     :style="cardToneStyle"
     @click="goToReview"
   >
     <!-- Poster -->
-    <div class="w-32 h-44 bg-[var(--color-bg-tertiary)] rounded-lg flex-shrink-0 overflow-hidden shadow-sm relative group">
+    <div class="group relative h-36 w-24 shrink-0 self-center overflow-hidden rounded-lg bg-[var(--color-bg-tertiary)] shadow-sm sm:h-44 sm:w-32 sm:self-auto">
       <img 
         v-if="userTitle.title.cover_image" 
         :src="userTitle.title.cover_image" 
@@ -212,10 +212,10 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
     </div>
     
     <!-- Content -->
-    <div class="flex flex-col flex-grow py-1 justify-center">
+    <div class="flex min-w-0 flex-grow flex-col justify-center py-1">
       
       <!-- Top Row: Badge & Status -->
-      <div class="flex items-center gap-3 mb-2">
+      <div class="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
         <span 
           v-if="score"
           class="score-badge px-2.5 py-1 rounded-md font-bold text-sm"
@@ -247,7 +247,7 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
         
         <button 
           v-if="editable"
-          class="ml-auto p-1.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-primary-500)] hover:bg-[var(--color-bg-tertiary)] rounded-full transition-colors"
+          class="ml-auto flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-primary-500)]"
           @click.stop="$emit('edit', userTitle)"
           title="Редактировать"
         >
@@ -259,7 +259,7 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
       </div>
 
       <!-- Title -->
-      <h3 class="font-extrabold text-2xl text-[var(--color-text-primary)] line-clamp-2 leading-tight mb-2">
+      <h3 class="mb-2 line-clamp-2 break-words text-xl font-extrabold leading-tight text-[var(--color-text-primary)] sm:text-2xl">
         {{ userTitle.title.name }}
       </h3>
       
@@ -295,14 +295,14 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
         <button 
           v-if="shouldShowReadMore" 
           @click.stop="isExpanded = !isExpanded" 
-          class="text-primary-500 hover:text-primary-600 hover:underline text-xs mt-1 font-medium cursor-pointer"
+          class="mt-1 inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-primary-500 hover:text-primary-600 hover:underline"
         >
           {{ isExpanded ? 'Свернуть' : 'Читать далее' }}
         </button>
       </div>
 
       <!-- Screenshots thumbnails -->
-      <div v-if="userTitle.screenshots && userTitle.screenshots.length > 0" class="flex gap-1.5" style="margin-top: 16px;" @click.stop>
+      <div v-if="userTitle.screenshots && userTitle.screenshots.length > 0" class="flex max-w-full gap-1.5 overflow-x-auto pb-1" style="margin-top: 16px;" @click.stop>
         <div 
           v-for="(screenshot, idx) in userTitle.screenshots.slice(0, 4)" 
           :key="screenshot.id"
@@ -463,8 +463,8 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   border: none;
@@ -535,6 +535,37 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   color: rgba(255, 255, 255, 0.6);
   font-size: 13px;
   font-weight: 500;
+}
+
+@media (max-width: 639px) {
+  .lightbox-close {
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+  }
+
+  .lightbox-nav {
+    top: auto;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    width: 48px;
+    height: 48px;
+  }
+
+  .lightbox-prev {
+    left: calc(50% - 58px);
+  }
+
+  .lightbox-next {
+    right: calc(50% - 58px);
+  }
+
+  .lightbox-content {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 120px);
+  }
+
+  .lightbox-img {
+    max-height: calc(100dvh - 160px);
+  }
 }
 </style>
 

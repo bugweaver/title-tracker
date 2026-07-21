@@ -54,8 +54,8 @@ async function handleSubmit() {
 
 <template>
   <form 
-    class="flex flex-col gap-6 w-full max-w-md p-10 
-           bg-surface border border-border rounded-3xl 
+    class="flex w-full max-w-md flex-col gap-5 rounded-2xl p-5 sm:gap-6 sm:rounded-3xl sm:p-10
+           bg-surface border border-border
            shadow-lg animate-fade-in" 
     @submit.prevent="handleSubmit"
   >

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, type CSSProperties } from 'vue';
+import { ref, computed, watch, onUnmounted, type CSSProperties } from 'vue';
 import { type TitleSearchResult, titlesApi, type Screenshot } from '@/shared/api/titles';
 import { GamePlatform, UserTitleStatus, useTitleStore } from '@/entities/title';
 import GameReviewCompletionDate from './GameReviewCompletionDate.vue';
@@ -53,9 +53,12 @@ const existingScreenshots = ref<Screenshot[]>([]);
 const deletedScreenshotIds = ref<number[]>([]);
 const isUploadingScreenshots = ref(false);
 const MAX_SCREENSHOTS = 10;
+let previousBodyOverflow = '';
 
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
+    previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     if (props.initialData) {
       status.value = props.initialData.status;
       rating.value = props.initialData.score || 0;
@@ -87,7 +90,13 @@ watch(() => props.isOpen, (isOpen) => {
     pendingPreviews.value = [];
     showDeleteConfirm.value = false;
     deletedScreenshotIds.value = [];
+  } else {
+    document.body.style.overflow = previousBodyOverflow;
   }
+});
+
+onUnmounted(() => {
+  document.body.style.overflow = previousBodyOverflow;
 });
 
 const canMarkCompleted100Percent = computed(() =>
@@ -321,9 +330,9 @@ const handleDelete = async () => {
 </script>
 
 <template>
-  <div v-if="isOpen && title" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click="$emit('close')">
+  <div v-if="isOpen && title" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4" @click="$emit('close')">
     <div
-      class="game-review-modal w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+      class="game-review-modal flex h-[100dvh] w-full max-w-lg flex-col overflow-hidden shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:rounded-xl"
       :style="reviewToneStyle"
       @click.stop
     >
@@ -336,7 +345,7 @@ const handleDelete = async () => {
         :emoji="emoji"
       />
 
-      <div class="p-6 space-y-8 overflow-y-auto custom-scrollbar">
+      <div class="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto p-4 sm:space-y-8 sm:p-6">
         <GameReviewRating
           v-if="status !== UserTitleStatus.PLANNED"
           v-model="rating"
