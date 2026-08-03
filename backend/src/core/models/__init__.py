@@ -19,6 +19,7 @@ from .user import User
 from .title import GamePlatform, Title, UserTitle, TitleCategory, UserTitleStatus
 from .notification import Notification, NotificationType
 from .screenshot import TitleScreenshot
+from .review_view import ReviewView
 
 __all__ = (
     "db_helper",
@@ -32,5 +33,6 @@ __all__ = (
     "Notification",
     "NotificationType",
     "TitleScreenshot",
+    "ReviewView",
 )
 

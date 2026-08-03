@@ -53,5 +53,7 @@ export interface UserTitle {
   title: Title;
   finished_at?: string;
   screenshots?: Screenshot[];
+  /** Present only for the owner (own list / own review detail). */
+  view_count?: number | null;
 }
 

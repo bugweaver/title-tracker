@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, type CSSProperties } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted, onUnmounted, computed, watch, type CSSProperties } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { apiClient } from '@/shared/api';
 import type { UserTitle } from '@/entities/title';
+import { useUserStore } from '@/entities/user';
 import { usersApi, type User } from '@/shared/api';
+import { titlesApi } from '@/shared/api/titles';
 import GamePlatformBadge from '@/features/games/ui/GamePlatformBadge.vue';
 
 interface ParsedSegment {
@@ -14,11 +16,32 @@ interface ParsedSegment {
 }
 
 const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
 const userTitleId = computed(() => Number(route.params.id));
 const entry = ref<UserTitle | null>(null);
 const author = ref<User | null>(null);
 const isLoading = ref(true);
 const parsedReview = ref<ParsedSegment[]>([]);
+
+const isOwner = computed(() =>
+  !!entry.value && userStore.user?.id === entry.value.user_id
+);
+
+const viewersModalOpen = ref(false);
+const viewers = ref<User[]>([]);
+const viewersLoading = ref(false);
+const viewersLoaded = ref(false);
+let previousBodyOverflow = '';
+
+const viewsLabel = computed(() => {
+  const n = entry.value?.view_count ?? 0;
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} просмотр`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} просмотра`;
+  return `${n} просмотров`;
+});
 
 const parseReviewText = (text: string | null) => {
   if (!text) { parsedReview.value = []; return; }
@@ -36,12 +59,50 @@ const toggleSpoiler = (id: number) => {
   if (seg) seg.isRevealed = !seg.isRevealed;
 };
 
+const loadViewers = async () => {
+  if (viewersLoaded.value || viewersLoading.value) return;
+  viewersLoading.value = true;
+  try {
+    const data = await titlesApi.getViewers(userTitleId.value);
+    viewers.value = data.viewers;
+    if (entry.value) entry.value.view_count = data.count;
+    viewersLoaded.value = true;
+  } catch (e) {
+    console.error('Failed to fetch viewers', e);
+  } finally {
+    viewersLoading.value = false;
+  }
+};
+
+const openViewersModal = async () => {
+  previousBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  viewersModalOpen.value = true;
+  await loadViewers();
+};
+
+const closeViewersModal = () => {
+  viewersModalOpen.value = false;
+  document.body.style.overflow = previousBodyOverflow;
+};
+
+const openViewerProfile = (viewerId: number) => {
+  closeViewersModal();
+  router.push(`/user/${viewerId}`);
+};
+
 const fetchEntry = async () => {
   isLoading.value = true;
+  closeViewersModal();
+  viewers.value = [];
+  viewersLoaded.value = false;
   try {
     entry.value = await apiClient.get<UserTitle>(`/titles/entry/${userTitleId.value}`);
     if (entry.value) {
       author.value = await usersApi.getUser(entry.value.user_id);
+      if (userStore.user?.id !== entry.value.user_id) {
+        titlesApi.recordView(entry.value.id).catch(() => {});
+      }
     }
   } catch (e) {
     console.error('Failed to fetch review entry', e);
@@ -52,6 +113,10 @@ const fetchEntry = async () => {
 };
 
 onMounted(fetchEntry);
+
+onUnmounted(() => {
+  document.body.style.overflow = previousBodyOverflow;
+});
 
 watch(
   () => route.params.id,
@@ -255,6 +320,15 @@ const formatDate = (dateStr: string | null | undefined) => {
           Отзыв не оставлен
         </div>
 
+        <button
+          v-if="isOwner && (entry.view_count ?? 0) > 0"
+          type="button"
+          class="views-meta"
+          @click="openViewersModal"
+        >
+          {{ viewsLabel }} · Кто смотрел
+        </button>
+
         <!-- Screenshots gallery -->
         <div v-if="entry.screenshots && entry.screenshots.length > 0" class="screenshots-section review-accent-card">
           <h2 class="section-title">Скриншоты</h2>
@@ -304,6 +378,48 @@ const formatDate = (dateStr: string | null | undefined) => {
         class="lightbox-nav lightbox-next" 
         @click.stop="lightboxIndex++"
       >›</button>
+    </div>
+  </Teleport>
+
+  <!-- Viewers modal -->
+  <Teleport to="body">
+    <div
+      v-if="viewersModalOpen"
+      class="viewers-modal-overlay"
+      @click="closeViewersModal"
+    >
+      <div class="viewers-modal" @click.stop>
+        <div class="viewers-modal-header">
+          <h2 class="viewers-modal-title">Кто смотрел</h2>
+          <button type="button" class="viewers-modal-close" @click="closeViewersModal">✕</button>
+        </div>
+        <div class="viewers-modal-body">
+          <div v-if="viewersLoading" class="viewers-loading">
+            <div class="spinner small"></div>
+          </div>
+          <div v-else-if="viewers.length === 0" class="viewers-empty">
+            Пока никто не смотрел
+          </div>
+          <div v-else class="viewers-list">
+            <button
+              v-for="viewer in viewers"
+              :key="viewer.id"
+              type="button"
+              class="viewer-row"
+              @click="openViewerProfile(viewer.id)"
+            >
+              <div class="viewer-avatar">
+                <img v-if="viewer.avatar_url" :src="viewer.avatar_url" alt="" class="avatar-img" />
+                <span v-else class="avatar-placeholder">{{ viewer.login.substring(0, 1).toUpperCase() }}</span>
+              </div>
+              <div class="viewer-info">
+                <span class="viewer-name">{{ viewer.name || viewer.login }}</span>
+                <span class="viewer-login">@{{ viewer.login }}</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </Teleport>
 </template>
@@ -557,6 +673,191 @@ const formatDate = (dateStr: string | null | undefined) => {
 
 .detail-value.score {
   font-size: 24px;
+}
+
+.views-meta {
+  align-self: flex-start;
+  margin: -4px 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  min-height: 36px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: transparent;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.views-meta:hover {
+  color: var(--color-text-secondary, var(--color-text));
+  text-decoration-color: currentColor;
+}
+
+.viewers-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  padding: 16px;
+}
+
+.viewers-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: min(80dvh, 560px);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background-soft, var(--color-surface, #fff));
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.viewers-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.viewers-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  color: var(--color-text);
+}
+
+.viewers-modal-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.viewers-modal-close:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  color: var(--color-text);
+}
+
+.viewers-modal-body {
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.viewers-loading {
+  display: flex;
+  justify-content: center;
+  padding: 28px;
+}
+
+.spinner.small {
+  width: 22px;
+  height: 22px;
+  border-width: 2px;
+}
+
+.viewers-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.viewers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viewer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  min-height: 52px;
+  transition: background 0.15s;
+}
+
+.viewer-row:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+.viewer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-surface-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.viewer-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.viewer-name {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.viewer-login {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .viewers-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .viewers-modal {
+    max-width: none;
+    max-height: 85dvh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+  }
+
+  .viewers-modal-header {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .viewers-modal-body {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
 }
 
 .status-value-row {

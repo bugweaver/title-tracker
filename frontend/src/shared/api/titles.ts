@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import type { GamePlatform, UserTitle } from '@/entities/title';
+import type { User } from './users';
 
 export type TitleType = 'game' | 'movie' | 'tv' | 'anime';
 
@@ -7,6 +8,11 @@ export interface Screenshot {
   id: number;
   url: string;
   position: number;
+}
+
+export interface ReviewViewsResponse {
+  count: number;
+  viewers: User[];
 }
 
 export interface TitleSearchResult {
@@ -56,4 +62,10 @@ export const titlesApi = {
 
   deleteUserTitle: (userTitleId: number) =>
     apiClient.delete(`/user-titles/${userTitleId}`),
+
+  recordView: (userTitleId: number) =>
+    apiClient.post<{ recorded: boolean }>(`/titles/entry/${userTitleId}/view`),
+
+  getViewers: (userTitleId: number) =>
+    apiClient.get<ReviewViewsResponse>(`/titles/entry/${userTitleId}/viewers`),
 };

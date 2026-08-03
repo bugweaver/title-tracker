@@ -27,6 +27,7 @@ interface UserTitle {
   title: Title;
   finished_at?: string | null;
   screenshots?: Screenshot[];
+  view_count?: number | null;
 }
 
 const props = withDefaults(defineProps<{
@@ -112,6 +113,19 @@ const gamePlatform = computed(() =>
     ? props.userTitle.game_platform
     : null
 );
+
+const showViewCount = computed(() =>
+  props.editable && (props.userTitle.view_count ?? 0) > 0
+);
+
+const viewsLabel = computed(() => {
+  const n = props.userTitle.view_count ?? 0;
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} просмотр`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} просмотра`;
+  return `${n} просмотров`;
+});
 
 const isRevealed = ref(false);
 const isExpanded = ref(false);
@@ -301,6 +315,14 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
         </button>
       </div>
 
+      <div
+        v-if="showViewCount"
+        class="view-count-line text-xs text-[var(--color-text-tertiary)]"
+        :class="{ 'mt-2': !!userTitle.review_text }"
+      >
+        {{ viewsLabel }}
+      </div>
+
       <!-- Screenshots thumbnails -->
       <div v-if="userTitle.screenshots && userTitle.screenshots.length > 0" class="flex max-w-full gap-1.5 overflow-x-auto pb-1" style="margin-top: 16px;" @click.stop>
         <div 
@@ -422,6 +444,10 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   color: rgb(var(--card-tone-rgb));
   background: color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-badge-tint), var(--color-surface-hover));
   border: 1px solid color-mix(in srgb, rgb(var(--card-tone-rgb)) 28%, var(--color-border));
+}
+
+.view-count-line {
+  opacity: 0.85;
 }
 
 .screenshot-chip {

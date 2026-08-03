@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 from core.models.title import GamePlatform, TitleCategory, UserTitleStatus
 from screenshots.schemas import ScreenshotRead
+from users.schemas import UserRead
 
 
 class TitleBase(BaseModel):
@@ -43,8 +44,18 @@ class UserTitleRead(UserTitleBase):
     is_completed_100_percent: bool = False
     title: TitleRead
     screenshots: list[ScreenshotRead] = []
+    view_count: int | None = None
     
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewViewRecordResponse(BaseModel):
+    recorded: bool
+
+
+class ReviewViewsResponse(BaseModel):
+    count: int
+    viewers: list[UserRead]
 
 
 class UserTitleCreate(UserTitleBase):
