@@ -19,12 +19,15 @@ class TitleCategory(str, Enum):
     MOVIE = "movie"
     SERIES = "series"
     ANIME = "anime"
+    MANGA = "manga"
+    COMICS = "comics"
+    BOOK = "book"
 
 
 class UserTitleStatus(str, Enum):
     COMPLETED = "completed"
     PLAYING = "playing"  # For games
-    WATCHING = "watching"  # For movies/series/anime
+    WATCHING = "watching"  # For movies/series/anime/manga/comics/books (Читаю)
     DROPPED = "dropped"
     PLANNED = "planned"
     ON_HOLD = "on_hold"

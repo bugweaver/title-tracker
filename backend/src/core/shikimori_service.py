@@ -1,15 +1,17 @@
 import logging
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 import httpx
 from core.content import ContentProvider, ContentDTO
 
 logger = logging.getLogger(__name__)
 
+
 class ShikimoriService(ContentProvider):
     SHIKIMORI_ORIGIN = "https://shikimori.io"
 
-    def __init__(self):
+    def __init__(self, media_type: Literal["anime", "manga"] = "anime"):
+        self.media_type = media_type
         self.base_url = f"{self.SHIKIMORI_ORIGIN}/api/graphql"
         self.headers = {
             "User-Agent": "TitleTracker/1.0",
@@ -18,17 +20,18 @@ class ShikimoriService(ContentProvider):
         }
 
     async def search(self, query: str) -> List[ContentDTO]:
-        graphql_query = """
-        query($search: String) {
-          animes(search: $search, limit: 20, order: popularity, kind: "!special") {
+        kind_filter = ', kind: "!special"' if self.media_type == "anime" else ""
+        graphql_query = f"""
+        query($search: String) {{
+          {self.media_type}s(search: $search, limit: 20, order: popularity{kind_filter}) {{
             id
             name
             russian
-            airedOn { date }
-            poster { originalUrl }
-            genres { russian }
-          }
-        }
+            airedOn {{ date }}
+            poster {{ originalUrl }}
+            genres {{ russian }}
+          }}
+        }}
         """
 
         async with httpx.AsyncClient() as client:
@@ -48,23 +51,23 @@ class ShikimoriService(ContentProvider):
                     logger.error(f"GraphQL Errors: {data['errors']}")
                     return []
 
-                return self._process_results(data.get("data", {}).get("animes", []))
+                return self._process_results(data.get("data", {}).get(f"{self.media_type}s", []))
             except httpx.HTTPError as e:
-                logger.error(f"Failed to search Shikimori: {e}")
+                logger.error(f"Failed to search Shikimori ({self.media_type}): {e}")
                 raise
 
     async def get_details(self, external_id: str) -> Optional[ContentDTO]:
-        graphql_query = """
-        query($ids: String) {
-          animes(ids: $ids, limit: 1) {
+        graphql_query = f"""
+        query($ids: String) {{
+          {self.media_type}s(ids: $ids, limit: 1) {{
             id
             name
             russian
-            airedOn { date }
-            poster { originalUrl }
-            genres { russian }
-          }
-        }
+            airedOn {{ date }}
+            poster {{ originalUrl }}
+            genres {{ russian }}
+          }}
+        }}
         """
 
         async with httpx.AsyncClient() as client:
@@ -84,16 +87,15 @@ class ShikimoriService(ContentProvider):
                     logger.error(f"GraphQL Errors: {data['errors']}")
                     return None
 
-                items = data.get("data", {}).get("animes", [])
+                items = data.get("data", {}).get(f"{self.media_type}s", [])
                 if not items:
                     return None
                 
-                # reusing logic via extracting to helper or just copy-paste since _process_results takes list
                 results = self._process_results(items)
                 return results[0] if results else None
 
             except httpx.HTTPError as e:
-                logger.error(f"Failed to get Shikimori details: {e}")
+                logger.error(f"Failed to get Shikimori ({self.media_type}) details: {e}")
                 return None
 
     def _process_results(self, items: List[dict]) -> List[ContentDTO]:
@@ -103,7 +105,8 @@ class ShikimoriService(ContentProvider):
             original_title = item.get("name")
             
             # Extract year from date string "YYYY-MM-DD"
-            date_str = item.get("airedOn", {}).get("date")
+            aired_on = item.get("airedOn") or {}
+            date_str = aired_on.get("date")
             year = None
             if date_str and "-" in date_str:
                  try:
@@ -111,7 +114,8 @@ class ShikimoriService(ContentProvider):
                  except ValueError:
                      pass
 
-            poster_url = item.get("poster", {}).get("originalUrl")
+            poster = item.get("poster") or {}
+            poster_url = poster.get("originalUrl")
             if poster_url and not poster_url.startswith("http"):
                 poster_url = self.SHIKIMORI_ORIGIN + poster_url
 
@@ -123,7 +127,7 @@ class ShikimoriService(ContentProvider):
                 original_title=original_title,
                 poster_url=poster_url,
                 release_year=year,
-                type="anime",
+                type=self.media_type,
                 genres=genres
             ))
         return results

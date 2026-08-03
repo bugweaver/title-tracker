@@ -11,6 +11,7 @@ import {
   getAvailableTitleStatuses,
   getTitleStatusFromRouteSegment,
   getTitleStatusRouteSegment,
+  getTitleStatusLabel,
 } from '@/entities/title';
 import UserGameCard from '@/features/games/ui/UserGameCard.vue';
 import AppSelect from '@/shared/ui/AppSelect.vue';
@@ -105,18 +106,10 @@ const tabs = [
   { id: TitleCategory.MOVIE, label: 'Фильмы' },
   { id: TitleCategory.SERIES, label: 'Сериалы' },
   { id: TitleCategory.ANIME, label: 'Аниме' },
+  { id: TitleCategory.MANGA, label: 'Манга' },
+  { id: TitleCategory.COMICS, label: 'Комиксы' },
+  { id: TitleCategory.BOOK, label: 'Книги' },
 ] as const;
-
-const getStatusLabel = (status: UserTitleStatus | 'all', category: TitleCategory) => {
-    if (status === 'all') return 'Все';
-    if (status === UserTitleStatus.COMPLETED) return category === TitleCategory.GAME ? 'Прошел' : 'Посмотрел';
-    if (status === UserTitleStatus.PLAYING) return category === TitleCategory.GAME ? 'Играю' : 'Смотрю';
-    if (status === UserTitleStatus.WATCHING) return 'Смотрю';
-    if (status === UserTitleStatus.DROPPED) return 'Дропнул';
-    if (status === UserTitleStatus.PLANNED) return 'В планах';
-    if (status === UserTitleStatus.ON_HOLD) return 'На паузе';
-    return status;
-};
 
 // "Playing" and "Watching" are equivalent for non-game categories (both mean "Смотрю").
 // Data may have either value depending on how it was added.
@@ -170,7 +163,7 @@ const currentStatuses = computed(() => {
 
   return getAvailableTitleStatuses(category).map(status => ({
     id: status,
-    label: getStatusLabel(status, category),
+    label: getTitleStatusLabel(status, category),
     count: getCountByStatus(status, category)
   }));
 });

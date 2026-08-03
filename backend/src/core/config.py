@@ -117,6 +117,12 @@ class Settings(BaseSettings):
     TMDB_API_KEY: str | None = None
     TMDB_READ_ACCESS_TOKEN: str | None = None
 
+    # Comic Vine API
+    COMICVINE_API_KEY: str | None = None
+
+    # Google Books API
+    GOOGLE_BOOKS_API_KEY: str | None = None
+
     # S3
     S3_ENDPOINT_URL: str = ""
     S3_ACCESS_KEY: str = ""

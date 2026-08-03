@@ -3,6 +3,9 @@ export enum TitleCategory {
   MOVIE = 'movie',
   SERIES = 'series',
   ANIME = 'anime',
+  MANGA = 'manga',
+  COMICS = 'comics',
+  BOOK = 'book',
 }
 
 export enum UserTitleStatus {

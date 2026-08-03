@@ -1,6 +1,6 @@
 import { TitleCategory, UserTitleStatus } from './types';
 
-export const TITLE_CATEGORY_ROUTE_PATTERN = 'games|movies|shows|anime';
+export const TITLE_CATEGORY_ROUTE_PATTERN = 'games|movies|shows|anime|manga|comics|books';
 export const TITLE_STATUS_ROUTE_PATTERN = 'all|completed|playing|watching|dropped|planned|on-hold';
 
 const categoryByRouteSegment: Record<string, TitleCategory> = {
@@ -8,6 +8,9 @@ const categoryByRouteSegment: Record<string, TitleCategory> = {
   movies: TitleCategory.MOVIE,
   shows: TitleCategory.SERIES,
   anime: TitleCategory.ANIME,
+  manga: TitleCategory.MANGA,
+  comics: TitleCategory.COMICS,
+  books: TitleCategory.BOOK,
 };
 
 const routeSegmentByCategory: Record<TitleCategory, string> = {
@@ -15,6 +18,9 @@ const routeSegmentByCategory: Record<TitleCategory, string> = {
   [TitleCategory.MOVIE]: 'movies',
   [TitleCategory.SERIES]: 'shows',
   [TitleCategory.ANIME]: 'anime',
+  [TitleCategory.MANGA]: 'manga',
+  [TitleCategory.COMICS]: 'comics',
+  [TitleCategory.BOOK]: 'books',
 };
 
 export const getTitleCategoryFromRouteSegment = (categoryParam: unknown) => {
@@ -47,6 +53,14 @@ const routeSegmentByStatus: Record<UserTitleStatus, string> & { all: string } = 
   [UserTitleStatus.ON_HOLD]: 'on-hold',
 };
 
+export const isReadingCategory = (category: TitleCategory | string) =>
+  category === TitleCategory.MANGA
+  || category === TitleCategory.COMICS
+  || category === TitleCategory.BOOK
+  || category === 'manga'
+  || category === 'comics'
+  || category === 'book';
+
 export const getAvailableTitleStatuses = (category: TitleCategory) =>
   [
     'all',
@@ -58,6 +72,43 @@ export const getAvailableTitleStatuses = (category: TitleCategory) =>
     UserTitleStatus.PLANNED,
     UserTitleStatus.ON_HOLD,
   ] as const;
+
+export const getTitleStatusLabel = (
+  status: UserTitleStatus | 'all' | string,
+  category: TitleCategory | string,
+  options?: { reviewForm?: boolean },
+) => {
+  if (status === 'all') return 'Все';
+
+  const isGame = category === TitleCategory.GAME || category === 'game';
+  const isReading = isReadingCategory(category);
+  const reviewForm = options?.reviewForm ?? false;
+
+  switch (status) {
+    case UserTitleStatus.COMPLETED:
+    case 'completed':
+      if (isGame) return reviewForm ? 'Пройдено' : 'Прошел';
+      if (isReading) return reviewForm ? 'Прочитано' : 'Прочитал';
+      return reviewForm ? 'Просмотрено' : 'Посмотрел';
+    case UserTitleStatus.PLAYING:
+    case 'playing':
+      return isGame ? 'Играю' : isReading ? 'Читаю' : 'Смотрю';
+    case UserTitleStatus.WATCHING:
+    case 'watching':
+      return isReading ? 'Читаю' : 'Смотрю';
+    case UserTitleStatus.DROPPED:
+    case 'dropped':
+      return reviewForm ? 'Дропнуто' : 'Дропнул';
+    case UserTitleStatus.PLANNED:
+    case 'planned':
+      return 'В планах';
+    case UserTitleStatus.ON_HOLD:
+    case 'on_hold':
+      return 'На паузе';
+    default:
+      return status;
+  }
+};
 
 export const getTitleStatusFromRouteSegment = (
   statusParam: unknown,

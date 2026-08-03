@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted, type CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
-import { type GamePlatform, type UserTitleStatus, type Screenshot } from '@/entities/title';
-import { TitleCategory } from '@/entities/title';
+import { type GamePlatform, type UserTitleStatus, type Screenshot, TitleCategory, getTitleStatusLabel } from '@/entities/title';
 import GamePlatformBadge from './GamePlatformBadge.vue';
 
 interface Title {
@@ -80,18 +79,9 @@ const cardToneStyle = computed<CSSProperties>(() => ({
   '--card-tone-rgb': cardToneRgb.value.join(' '),
 } as CSSProperties));
 
-const statusLabel = computed(() => {
-    // Basic mapping, can be moved to shared helper if needed
-    const s = props.userTitle.status;
-    const cat = props.userTitle.title.category;
-    if (s === 'completed') return cat === 'game' ? 'Прошел' : 'Посмотрел';
-    if (s === 'playing') return cat === 'game' ? 'Играю' : 'Смотрю';
-    if (s === 'watching') return 'Смотрю';
-    if (s === 'dropped') return 'Дропнул';
-    if (s === 'planned') return 'В планах';
-    if (s === 'on_hold') return 'На паузе';
-    return s;
-});
+const statusLabel = computed(() =>
+  getTitleStatusLabel(props.userTitle.status, props.userTitle.title.category)
+);
 
 const statusColorClass = computed(() => {
     const s = props.userTitle.status;

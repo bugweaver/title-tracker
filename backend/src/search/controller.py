@@ -7,11 +7,14 @@ from core.content import ContentDTO
 from core.igdb_service import igdb_service
 from core.tmdb_service import TmdbService
 from core.shikimori_service import ShikimoriService
+from core.comicvine_service import comicvine_service
+from core.google_books_service import google_books_service
 
 # Instantiate services
 tmdb_movie_service = TmdbService("movie")
 tmdb_tv_service = TmdbService("tv")
-shikimori_service = ShikimoriService()
+shikimori_anime_service = ShikimoriService("anime")
+shikimori_manga_service = ShikimoriService("manga")
 
 class SearchController(Controller):
     path = "/search"
@@ -21,7 +24,7 @@ class SearchController(Controller):
     async def search(
         self, 
         q: str, 
-        type: Literal["game", "movie", "tv", "anime"]
+        type: Literal["game", "movie", "tv", "anime", "manga", "comics", "book"]
     ) -> List[ContentDTO]:
         """
         Search for content across different providers.
@@ -37,7 +40,13 @@ class SearchController(Controller):
             elif type == "tv":
                 return await tmdb_tv_service.search(q)
             elif type == "anime":
-                return await shikimori_service.search(q)
+                return await shikimori_anime_service.search(q)
+            elif type == "manga":
+                return await shikimori_manga_service.search(q)
+            elif type == "comics":
+                return await comicvine_service.search(q)
+            elif type == "book":
+                return await google_books_service.search(q)
             else:
                  # This branch might be unreachable due to type hint validation by Litestar
                  raise HTTPException(detail="Invalid type", status_code=400)

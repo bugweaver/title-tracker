@@ -2,7 +2,7 @@ import { apiClient } from './client';
 import type { GamePlatform, UserTitle } from '@/entities/title';
 import type { User } from './users';
 
-export type TitleType = 'game' | 'movie' | 'tv' | 'anime';
+export type TitleType = 'game' | 'movie' | 'tv' | 'anime' | 'manga' | 'comics' | 'book';
 
 export interface Screenshot {
   id: number;

@@ -13,6 +13,7 @@ import {
   getAvailableTitleStatuses,
   getTitleStatusFromRouteSegment,
   getTitleStatusRouteSegment,
+  getTitleStatusLabel,
 } from '@/entities/title';
 import { type TitleSearchResult, usersApi, type UserProfile } from '@/shared/api';
 import { AppSelect } from '@/shared/ui';
@@ -146,23 +147,10 @@ const tabs = [
   { id: TitleCategory.MOVIE, label: 'Фильмы' },
   { id: TitleCategory.SERIES, label: 'Сериалы' },
   { id: TitleCategory.ANIME, label: 'Аниме' },
+  { id: TitleCategory.MANGA, label: 'Манга' },
+  { id: TitleCategory.COMICS, label: 'Комиксы' },
+  { id: TitleCategory.BOOK, label: 'Книги' },
 ] as const;
-
-// Helper to map backend status to display label
-const getStatusLabel = (status: UserTitleStatus | 'all', category: TitleCategory) => {
-    if (status === 'all') return 'Все';
-    
-    // Customize labels based on category if needed (e.g., Playing vs Watching)
-    if (status === UserTitleStatus.COMPLETED) {
-        return category === TitleCategory.GAME ? 'Прошел' : 'Посмотрел';
-    }
-    if (status === UserTitleStatus.PLAYING) return 'Играю';
-    if (status === UserTitleStatus.WATCHING) return 'Смотрю';
-    if (status === UserTitleStatus.DROPPED) return 'Дропнул';
-    if (status === UserTitleStatus.PLANNED) return 'В планах';
-    if (status === UserTitleStatus.ON_HOLD) return 'На паузе';
-    return status;
-};
 
 const filterByFinishedPeriod = (titles: UserTitle[]) => {
     if (selectedYear.value === null && selectedMonth.value === null) {
@@ -194,7 +182,7 @@ const currentStatuses = computed(() => {
 
   return getAvailableTitleStatuses(category).map(status => ({
     id: status,
-    label: getStatusLabel(status, category),
+    label: getTitleStatusLabel(status, category),
     count: filterByFinishedPeriod(titleStore.getTitlesByStatus(status, category)).length
   }));
 });
@@ -287,13 +275,16 @@ const addButtonLabel = computed(() => {
     case TitleCategory.MOVIE: return 'Добавить фильм';
     case TitleCategory.SERIES: return 'Добавить сериал';
     case TitleCategory.ANIME: return 'Добавить аниме';
+    case TitleCategory.MANGA: return 'Добавить мангу';
+    case TitleCategory.COMICS: return 'Добавить комикс';
+    case TitleCategory.BOOK: return 'Добавить книгу';
     default: return 'Добавить';
   }
 });
 
 const activeSearchCategory = computed(() => {
     if (activeTab.value === TitleCategory.SERIES) return 'tv';
-    return activeTab.value; // 'game', 'movie', 'anime' match TitleType
+    return activeTab.value; // 'game', 'movie', 'anime', 'manga', 'comics', 'book' match TitleType
 });
 </script>
 

@@ -28,7 +28,7 @@ watch(() => props.isOpen, (newVal) => {
   if (newVal) {
      previousBodyOverflow = document.body.style.overflow;
      document.body.style.overflow = 'hidden';
-     if (props.activeCategory && ['game', 'movie', 'tv', 'anime'].includes(props.activeCategory)) {
+     if (props.activeCategory && ['game', 'movie', 'tv', 'anime', 'manga', 'comics', 'book'].includes(props.activeCategory)) {
         activeTab.value = props.activeCategory as TitleType;
      } else {
         activeTab.value = 'game';
@@ -88,6 +88,9 @@ const getTitleLabel = computed(() => {
         case 'movie': return 'фильм';
         case 'tv': return 'сериал';
         case 'anime': return 'аниме';
+        case 'manga': return 'мангу';
+        case 'comics': return 'комикс';
+        case 'book': return 'книгу';
         default: return 'тайтл';
     }
 });
@@ -135,6 +138,27 @@ const getTitleLabel = computed(() => {
           @click="activeTab = 'anime'"
         >
           Аниме
+        </button>
+        <button 
+          class="min-h-11 min-w-24 flex-1 shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'manga' ? 'border-primary-500 text-text' : 'border-transparent text-text-secondary hover:text-text'"
+          @click="activeTab = 'manga'"
+        >
+          Манга
+        </button>
+        <button 
+          class="min-h-11 min-w-24 flex-1 shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'comics' ? 'border-primary-500 text-text' : 'border-transparent text-text-secondary hover:text-text'"
+          @click="activeTab = 'comics'"
+        >
+          Комиксы
+        </button>
+        <button 
+          class="min-h-11 min-w-24 flex-1 shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'book' ? 'border-primary-500 text-text' : 'border-transparent text-text-secondary hover:text-text'"
+          @click="activeTab = 'book'"
+        >
+          Книги
         </button>
       </div>
 

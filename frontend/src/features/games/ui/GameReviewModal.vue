@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, type CSSProperties } from 'vue';
 import { type TitleSearchResult, titlesApi, type Screenshot } from '@/shared/api/titles';
-import { GamePlatform, UserTitleStatus, useTitleStore } from '@/entities/title';
+import { GamePlatform, UserTitleStatus, useTitleStore, isReadingCategory } from '@/entities/title';
 import GameReviewCompletionDate from './GameReviewCompletionDate.vue';
 import GameReviewFooter from './GameReviewFooter.vue';
 import GameReviewFullCompletionToggle from './GameReviewFullCompletionToggle.vue';
@@ -123,12 +123,22 @@ const totalScreenshots = computed(() =>
 const canAddMore = computed(() => totalScreenshots.value < MAX_SCREENSHOTS);
 
 const statuses = computed(() => {
-  const isGame = props.title?.type === 'game';
-  const isMovie = props.title?.type === 'movie';
+  const type = props.title?.type ?? '';
+  const isGame = type === 'game';
+  const isMovie = type === 'movie';
+  const isReading = isReadingCategory(type);
 
   return [
-    { id: UserTitleStatus.COMPLETED, label: isGame ? 'Прошел' : 'Посмотрел' },
-    ...(!isMovie ? [{ id: isGame ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING, label: isGame ? 'Играю' : 'Смотрю' }] : []),
+    {
+      id: UserTitleStatus.COMPLETED,
+      label: isGame ? 'Прошел' : isReading ? 'Прочитал' : 'Посмотрел',
+    },
+    ...(!isMovie
+      ? [{
+          id: isGame ? UserTitleStatus.PLAYING : UserTitleStatus.WATCHING,
+          label: isGame ? 'Играю' : isReading ? 'Читаю' : 'Смотрю',
+        }]
+      : []),
     { id: UserTitleStatus.DROPPED, label: 'Дропнул' },
     { id: UserTitleStatus.PLANNED, label: 'В планах' },
     { id: UserTitleStatus.ON_HOLD, label: 'На паузе' },

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed, watch, type CSSProperties } from
 import { useRoute, useRouter } from 'vue-router';
 import { apiClient } from '@/shared/api';
 import type { UserTitle } from '@/entities/title';
+import { getTitleStatusLabel } from '@/entities/title';
 import { useUserStore } from '@/entities/user';
 import { usersApi, type User } from '@/shared/api';
 import { titlesApi } from '@/shared/api/titles';
@@ -146,6 +147,9 @@ const categoryLabel = (cat: string) => {
     case 'movie': return 'Фильм';
     case 'series': return 'Сериал';
     case 'anime': return 'Аниме';
+    case 'manga': return 'Манга';
+    case 'comics': return 'Комикс';
+    case 'book': return 'Книга';
     default: return cat;
   }
 };
@@ -156,28 +160,15 @@ const categoryIcon = (cat: string) => {
     case 'movie': return '🎬';
     case 'series': return '📺';
     case 'anime': return '🎌';
+    case 'manga': return '📖';
+    case 'comics': return '💥';
+    case 'book': return '📚';
     default: return '📝';
   }
 };
 
-const statusLabel = (status: string, category?: string) => {
-  switch (status) {
-    case 'completed':
-      return category === 'game' ? 'Пройдено' : 'Просмотрено';
-    case 'playing': 
-      return 'Играю';
-    case 'watching': 
-      return 'Смотрю';
-    case 'dropped': 
-      return 'Дропнуто';
-    case 'planned': 
-      return 'В планах';
-    case 'on_hold': 
-      return 'На паузе';
-    default: 
-      return status;
-  }
-};
+const statusLabel = (status: string, category?: string) =>
+  getTitleStatusLabel(status, category ?? '', { reviewForm: true });
 
 const interpolateColor = (
   from: [number, number, number],

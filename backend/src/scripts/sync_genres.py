@@ -6,6 +6,8 @@ from core.models.title import Title, TitleCategory
 from core.igdb_service import igdb_service
 from core.tmdb_service import TmdbService
 from core.shikimori_service import ShikimoriService
+from core.comicvine_service import comicvine_service
+from core.google_books_service import google_books_service
 
 async def sync_genres():
     print("Starting genre synchronization...")
@@ -13,7 +15,8 @@ async def sync_genres():
     # Initialize services
     tmdb_movie = TmdbService("movie")
     tmdb_tv = TmdbService("tv")
-    shikimori_svc = ShikimoriService()
+    shikimori_anime = ShikimoriService("anime")
+    shikimori_manga = ShikimoriService("manga")
     
     async with db_helper.session_factory() as session:
         # Fetch all titles regardless of genres to check/update
@@ -47,7 +50,13 @@ async def sync_genres():
                 elif title.category == TitleCategory.SERIES:
                     details = await tmdb_tv.get_details(title.external_id)
                 elif title.category == TitleCategory.ANIME:
-                    details = await shikimori_svc.get_details(title.external_id)
+                    details = await shikimori_anime.get_details(title.external_id)
+                elif title.category == TitleCategory.MANGA:
+                    details = await shikimori_manga.get_details(title.external_id)
+                elif title.category == TitleCategory.COMICS:
+                    details = await comicvine_service.get_details(title.external_id)
+                elif title.category == TitleCategory.BOOK:
+                    details = await google_books_service.get_details(title.external_id)
                 
                 if details and details.genres:
                     # Update genres

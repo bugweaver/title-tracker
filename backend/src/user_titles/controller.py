@@ -31,22 +31,28 @@ class UserTitlesController(Controller):
     ) -> UserTitleRead:
         user_id = request.user.id
 
-        # 1. Find or Create Title
-        stmt = select(Title).where(Title.external_id == data.external_id)
+        # Map type string to Enum
+        category_map = {
+            "game": TitleCategory.GAME,
+            "movie": TitleCategory.MOVIE,
+            "tv": TitleCategory.SERIES,
+            "series": TitleCategory.SERIES,
+            "anime": TitleCategory.ANIME,
+            "manga": TitleCategory.MANGA,
+            "comics": TitleCategory.COMICS,
+            "book": TitleCategory.BOOK,
+        }
+        category = category_map.get(data.type, TitleCategory.GAME)
+
+        # 1. Find or Create Title (scoped by category — external IDs can collide across providers)
+        stmt = select(Title).where(
+            Title.external_id == data.external_id,
+            Title.category == category,
+        )
         result = await db_session.execute(stmt)
         title = result.scalar_one_or_none()
 
         if not title:
-            # Map type string to Enum
-            category_map = {
-                "game": TitleCategory.GAME,
-                "movie": TitleCategory.MOVIE,
-                "tv": TitleCategory.SERIES,
-                "series": TitleCategory.SERIES,
-                "anime": TitleCategory.ANIME
-            }
-            category = category_map.get(data.type, TitleCategory.GAME)
-
             # Create new title
             title = Title(
                 name=data.name,

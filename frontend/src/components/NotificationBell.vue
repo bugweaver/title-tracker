@@ -79,6 +79,9 @@ const categoryIcon = (cat: string) => {
     case 'movie': return '🎬';
     case 'series': return '📺';
     case 'anime': return '🎌';
+    case 'manga': return '📖';
+    case 'comics': return '💥';
+    case 'book': return '📚';
     default: return '📝';
   }
 };

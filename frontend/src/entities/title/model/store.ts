@@ -33,7 +33,7 @@ export const useTitleStore = defineStore('title', () => {
     return titles.value.filter((t) => t.title.category === category);
   };
 
-  // "Playing" and "Watching" are equivalent for non-game categories (both mean "Смотрю")
+  // "Playing" and "Watching" are equivalent for non-game categories (Смотрю / Читаю)
   const isWatchingGroup = (s: UserTitleStatus) =>
     s === UserTitleStatus.PLAYING || s === UserTitleStatus.WATCHING;
 
