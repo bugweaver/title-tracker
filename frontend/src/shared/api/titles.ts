@@ -39,6 +39,7 @@ export interface AddUserTitleRequest {
   finished_at?: string;
   is_completed_100_percent?: boolean;
   game_platform?: GamePlatform | null;
+  increment_completion?: boolean;
 }
 
 export const titlesApi = {

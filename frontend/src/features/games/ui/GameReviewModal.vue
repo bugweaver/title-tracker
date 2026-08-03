@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, type CSSProperties } from 'vue';
 import { type TitleSearchResult, titlesApi, type Screenshot } from '@/shared/api/titles';
-import { GamePlatform, UserTitleStatus, useTitleStore, isReadingCategory } from '@/entities/title';
+import {
+  GamePlatform,
+  UserTitleStatus,
+  useTitleStore,
+  isReadingCategory,
+  getReplayCompletionLabel,
+} from '@/entities/title';
 import GameReviewCompletionDate from './GameReviewCompletionDate.vue';
 import GameReviewFooter from './GameReviewFooter.vue';
 import GameReviewFullCompletionToggle from './GameReviewFullCompletionToggle.vue';
 import GameReviewHeader from './GameReviewHeader.vue';
 import GameReviewPlatformSelect from './GameReviewPlatformSelect.vue';
 import GameReviewRating from './GameReviewRating.vue';
+import GameReviewReplayToggle from './GameReviewReplayToggle.vue';
 import GameReviewScreenshots from './GameReviewScreenshots.vue';
 import GameReviewStatusSelector from './GameReviewStatusSelector.vue';
 import GameReviewTextArea from './GameReviewTextArea.vue';
@@ -42,6 +49,7 @@ const review = ref('');
 const selectedYear = ref<number | null>(null);
 const selectedMonth = ref<number | null>(null);
 const isCompleted100Percent = ref(false);
+const incrementCompletion = ref(false);
 const selectedPlatform = ref<GamePlatform | null>(null);
 const isSubmitting = ref(false);
 const isDeleting = ref(false);
@@ -66,6 +74,7 @@ watch(() => props.isOpen, (isOpen) => {
       isCompleted100Percent.value = Boolean(props.initialData.is_completed_100_percent);
       selectedPlatform.value = props.initialData.game_platform || null;
       existingScreenshots.value = props.initialData.screenshots ? [...props.initialData.screenshots] : [];
+      incrementCompletion.value = false;
       if (props.initialData.finished_at) {
         const date = new Date(props.initialData.finished_at);
         selectedYear.value = date.getFullYear();
@@ -79,6 +88,7 @@ watch(() => props.isOpen, (isOpen) => {
       rating.value = 0;
       review.value = '';
       isCompleted100Percent.value = false;
+      incrementCompletion.value = false;
       selectedPlatform.value = null;
       existingScreenshots.value = [];
       const now = new Date();
@@ -106,6 +116,20 @@ const canMarkCompleted100Percent = computed(() =>
 const canSelectGamePlatform = computed(() =>
   props.title?.type === 'game'
 );
+
+const canIncrementCompletion = computed(() =>
+  Boolean(props.initialData?.userTitleId) && status.value === UserTitleStatus.COMPLETED
+);
+
+const replayCompletionLabel = computed(() =>
+  getReplayCompletionLabel(props.title?.type ?? '')
+);
+
+watch(canIncrementCompletion, (canIncrement) => {
+  if (!canIncrement) {
+    incrementCompletion.value = false;
+  }
+});
 
 watch([canMarkCompleted100Percent, canSelectGamePlatform], ([canMark, canSelectPlatform]) => {
   if (!canMark) {
@@ -286,6 +310,7 @@ const handleSubmit = async () => {
       finished_at: finishedAtIso,
       is_completed_100_percent: canMarkCompleted100Percent.value && isCompleted100Percent.value,
       game_platform: canSelectGamePlatform.value ? selectedPlatform.value : null,
+      increment_completion: canIncrementCompletion.value && incrementCompletion.value,
     });
 
     const userTitleId = result.id || props.initialData?.userTitleId;
@@ -376,10 +401,21 @@ const handleDelete = async () => {
           @update:year="selectedYear = $event"
         />
 
-        <GameReviewFullCompletionToggle
-          v-if="canMarkCompleted100Percent"
-          v-model="isCompleted100Percent"
-        />
+        <div
+          v-if="canIncrementCompletion || canMarkCompleted100Percent"
+          class="flex flex-col gap-3"
+        >
+          <GameReviewReplayToggle
+            v-if="canIncrementCompletion"
+            v-model="incrementCompletion"
+            :label="replayCompletionLabel"
+          />
+
+          <GameReviewFullCompletionToggle
+            v-if="canMarkCompleted100Percent"
+            v-model="isCompleted100Percent"
+          />
+        </div>
 
         <GameReviewPlatformSelect
           v-if="canSelectGamePlatform"

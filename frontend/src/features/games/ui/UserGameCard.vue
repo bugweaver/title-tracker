@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted, type CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
-import { type GamePlatform, type UserTitleStatus, type Screenshot, TitleCategory, getTitleStatusLabel } from '@/entities/title';
+import {
+  type GamePlatform,
+  type UserTitleStatus,
+  type Screenshot,
+  TitleCategory,
+  getTitleStatusLabel,
+  getTimesCompletedLabel,
+} from '@/entities/title';
 import GamePlatformBadge from './GamePlatformBadge.vue';
 
 interface Title {
@@ -23,6 +30,7 @@ interface UserTitle {
   is_spoiler?: boolean;
   is_completed_100_percent: boolean;
   game_platform: GamePlatform | null;
+  times_completed?: number;
   title: Title;
   finished_at?: string | null;
   screenshots?: Screenshot[];
@@ -96,6 +104,14 @@ const statusColorClass = computed(() => {
 const isCompleted100PercentGame = computed(() =>
   props.userTitle.title.category === TitleCategory.GAME
   && props.userTitle.is_completed_100_percent
+);
+
+const timesCompletedLabel = computed(() =>
+  getTimesCompletedLabel(
+    props.userTitle.times_completed ?? 0,
+    props.userTitle.title.category,
+    { compact: true },
+  )
 );
 
 const gamePlatform = computed(() =>
@@ -240,6 +256,14 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
           title="Игра пройдена на 100%"
         >
           100% пройдено
+        </span>
+
+        <span
+          v-if="timesCompletedLabel"
+          class="times-completed-badge text-xs px-2.5 py-1 rounded-full font-black"
+          :title="`Завершено ${userTitle.times_completed} раз`"
+        >
+          {{ timesCompletedLabel }}
         </span>
 
         <GamePlatformBadge
@@ -428,6 +452,14 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
     linear-gradient(135deg, rgb(124 58 237 / 0.95), rgb(217 70 239 / 0.95));
   border: 1px solid rgb(168 85 247 / var(--completion-badge-border));
   box-shadow: 0 8px 18px rgb(168 85 247 / var(--completion-badge-shadow));
+}
+
+.times-completed-badge {
+  color: white;
+  background:
+    linear-gradient(135deg, rgb(5 150 105 / 0.95), rgb(16 185 129 / 0.95));
+  border: 1px solid rgb(16 185 129 / 0.55);
+  box-shadow: 0 8px 18px rgb(16 185 129 / 0.28);
 }
 
 .platform-badge {

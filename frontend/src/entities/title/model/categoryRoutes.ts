@@ -61,6 +61,36 @@ export const isReadingCategory = (category: TitleCategory | string) =>
   || category === 'comics'
   || category === 'book';
 
+export const getReplayCompletionLabel = (category: TitleCategory | string) => {
+  if (category === TitleCategory.GAME || category === 'game') return 'Перепрохождение';
+  if (isReadingCategory(category)) return 'Перечитка';
+  return 'Пересмотр';
+};
+
+export const getTimesCompletedLabel = (
+  timesCompleted: number,
+  category: TitleCategory | string,
+  options?: { compact?: boolean },
+) => {
+  if (timesCompleted <= 1) return null;
+
+  if (options?.compact) return `×${timesCompleted}`;
+
+  const isGame = category === TitleCategory.GAME || category === 'game';
+  const isReading = isReadingCategory(category);
+  const mod10 = timesCompleted % 10;
+  const mod100 = timesCompleted % 100;
+  const noun = mod10 === 1 && mod100 !== 11
+    ? 'раз'
+    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+      ? 'раза'
+      : 'раз';
+
+  if (isGame) return `Пройдено ${timesCompleted} ${noun}`;
+  if (isReading) return `Прочитано ${timesCompleted} ${noun}`;
+  return `Просмотрено ${timesCompleted} ${noun}`;
+};
+
 export const getAvailableTitleStatuses = (category: TitleCategory) =>
   [
     'all',

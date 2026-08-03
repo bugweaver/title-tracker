@@ -203,6 +203,8 @@ const isCompleted100PercentGame = computed(() =>
   && entry.value.is_completed_100_percent
 );
 
+const showTimesCompleted = computed(() => (entry.value?.times_completed ?? 0) > 1);
+
 const formatDate = (dateStr: string | null | undefined) => {
   if (!dateStr) return null;
   const str = new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -278,6 +280,10 @@ const formatDate = (dateStr: string | null | undefined) => {
           <div class="detail-card review-accent-card" v-if="entry.finished_at">
             <span class="detail-label">Дата завершения</span>
             <span class="detail-value">{{ formatDate(entry.finished_at) }}</span>
+          </div>
+          <div class="detail-card review-accent-card" v-if="showTimesCompleted">
+            <span class="detail-label">Завершений</span>
+            <span class="detail-value">{{ entry.times_completed }}</span>
           </div>
           <div class="detail-card review-accent-card" v-if="entry.title.category === 'game' && entry.game_platform">
             <span class="detail-label">Платформа</span>

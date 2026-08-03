@@ -61,6 +61,7 @@ class UserTitle(IntIdPkMixin, Base):
     review_text: Mapped[str | None] = mapped_column(Text)
     is_spoiler: Mapped[bool] = mapped_column(default=False, server_default="false")
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    times_completed: Mapped[int] = mapped_column(default=0, server_default="0")
     is_completed_100_percent: Mapped[bool] = mapped_column(default=False, server_default="false")
     game_platform: Mapped[GamePlatform | None] = mapped_column(nullable=True)
     

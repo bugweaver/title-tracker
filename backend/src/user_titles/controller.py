@@ -88,12 +88,19 @@ class UserTitlesController(Controller):
         )
 
         if user_title:
+            previous_status = user_title.status
+            should_increment = (
+                data.status == UserTitleStatus.COMPLETED
+                and data.increment_completion
+            )
+
             # Track meaningful changes before updating
             if (user_title.status != data.status
                 or user_title.score != data.score
                 or user_title.review_text != data.review_text
                 or user_title.is_completed_100_percent != is_completed_100_percent
-                or user_title.game_platform != game_platform):
+                or user_title.game_platform != game_platform
+                or should_increment):
                 has_meaningful_change = True
 
             # Update existing
@@ -103,6 +110,15 @@ class UserTitlesController(Controller):
             user_title.is_spoiler = data.is_spoiler
             user_title.is_completed_100_percent = is_completed_100_percent
             user_title.game_platform = game_platform
+
+            if should_increment:
+                user_title.times_completed += 1
+            elif (
+                data.status == UserTitleStatus.COMPLETED
+                and previous_status != UserTitleStatus.COMPLETED
+                and user_title.times_completed == 0
+            ):
+                user_title.times_completed = 1
 
             if data.finished_at:
                 user_title.finished_at = data.finished_at.replace(tzinfo=None)
@@ -119,6 +135,8 @@ class UserTitlesController(Controller):
             if not finished_at and data.status == UserTitleStatus.COMPLETED:
                 finished_at = datetime.now()
 
+            times_completed = 1 if data.status == UserTitleStatus.COMPLETED else 0
+
             user_title = UserTitle(
                 user_id=user_id,
                 title_id=title.id,
@@ -127,6 +145,7 @@ class UserTitlesController(Controller):
                 review_text=data.review_text,
                 is_spoiler=data.is_spoiler,
                 finished_at=finished_at,
+                times_completed=times_completed,
                 is_completed_100_percent=is_completed_100_percent,
                 game_platform=game_platform,
             )
@@ -168,6 +187,7 @@ class UserTitlesController(Controller):
             score=user_title.score,
             is_spoiler=user_title.is_spoiler,
             finished_at=user_title.finished_at,
+            times_completed=user_title.times_completed,
             is_completed_100_percent=user_title.is_completed_100_percent,
             game_platform=user_title.game_platform,
             screenshots=[

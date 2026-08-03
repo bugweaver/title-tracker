@@ -51,6 +51,7 @@ export interface UserTitle {
   is_spoiler: boolean;
   is_completed_100_percent: boolean;
   game_platform: GamePlatform | null;
+  times_completed: number;
   created_at: string;
   updated_at: string;
   title: Title;

@@ -11,7 +11,7 @@ from litestar.exceptions import HTTPException, NotFoundException
 from litestar.security.jwt import Token
 
 from core.models.db_helper import get_db_session
-from core.models import User, Title, UserTitle, ReviewView
+from core.models import User, Title, UserTitle, ReviewView, UserTitleStatus
 from users.schemas import UserRead
 from .schemas import (
     TitleCreate,
@@ -217,6 +217,7 @@ class TitleController(Controller):
             title_id=data.title_id,
             status=data.status,
             score=data.score,
+            times_completed=1 if data.status == UserTitleStatus.COMPLETED else 0,
         )
 
         db_session.add(user_title)
