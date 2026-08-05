@@ -2,40 +2,12 @@
 import { computed, ref, watch, onMounted, onUnmounted, type CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  type GamePlatform,
-  type UserTitleStatus,
-  type Screenshot,
+  type UserTitle,
   TitleCategory,
   getTitleStatusLabel,
   getTimesCompletedLabel,
 } from '@/entities/title';
 import GamePlatformBadge from './GamePlatformBadge.vue';
-
-interface Title {
-  id: number;
-  name: string;
-  category: TitleCategory;
-  cover_image: string | null;
-  release_year: number | null;
-  genres: string[] | null;
-}
-
-interface UserTitle {
-  id: number;
-  user_id: number;
-  title_id: number;
-  status: UserTitleStatus;
-  score: number | null;
-  review_text: string | null;
-  is_spoiler?: boolean;
-  is_completed_100_percent: boolean;
-  game_platform: GamePlatform | null;
-  times_completed?: number;
-  title: Title;
-  finished_at?: string | null;
-  screenshots?: Screenshot[];
-  view_count?: number | null;
-}
 
 const props = withDefaults(defineProps<{
   userTitle: UserTitle;
