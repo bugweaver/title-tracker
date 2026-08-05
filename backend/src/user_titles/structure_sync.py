@@ -1,25 +1,62 @@
-"""Sync series season/episode catalog from TMDB into local tables."""
+"""Sync series/anime season/episode catalog into local tables."""
 
 from __future__ import annotations
+
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from core.models import Title, TitleCategory, TitleEpisode, TitleSeason, UserTitle
+from core.shikimori_service import ShikimoriService
 from core.tmdb_service import TmdbService
+
+STRUCTURE_CATEGORIES = frozenset({TitleCategory.SERIES, TitleCategory.ANIME})
+
+
+def supports_structure(category: TitleCategory | str | None) -> bool:
+    if category is None:
+        return False
+    value = category.value if isinstance(category, TitleCategory) else str(category)
+    return value in {c.value for c in STRUCTURE_CATEGORIES}
+
+
+async def _fetch_seasons(title: Title) -> list[dict[str, Any]]:
+    if not title.external_id:
+        return []
+    if title.category == TitleCategory.SERIES:
+        return await TmdbService("tv").get_tv_seasons(title.external_id)
+    if title.category == TitleCategory.ANIME:
+        return await ShikimoriService("anime").get_anime_seasons(title.external_id)
+    return []
+
+
+async def _fetch_episodes(
+    title: Title, season_number: int
+) -> list[dict[str, Any]] | None:
+    if not title.external_id:
+        return None
+    if title.category == TitleCategory.SERIES:
+        return await TmdbService("tv").get_season_episodes(
+            title.external_id, season_number
+        )
+    if title.category == TitleCategory.ANIME:
+        return await ShikimoriService("anime").get_season_episodes(
+            title.external_id, season_number
+        )
+    return None
 
 
 async def sync_seasons_from_tmdb(
     db_session: AsyncSession,
     title: Title,
 ) -> list[TitleSeason]:
-    """Upsert title_seasons from TMDB (excludes season 0)."""
-    if title.category != TitleCategory.SERIES or not title.external_id:
+    """Upsert title_seasons from the provider (TMDB for series, Shikimori for anime)."""
+    if not supports_structure(title.category) or not title.external_id:
         return []
 
-    tmdb = TmdbService("tv")
-    seasons_data = await tmdb.get_tv_seasons(title.external_id)
+    seasons_data = await _fetch_seasons(title)
     if not seasons_data:
         # Fall back to whatever is already stored
         stmt = (
@@ -60,14 +97,11 @@ async def sync_season_episodes_from_tmdb(
     title: Title,
     title_season: TitleSeason,
 ) -> list[TitleEpisode]:
-    """Upsert episodes for a season from TMDB."""
-    if title.category != TitleCategory.SERIES or not title.external_id:
+    """Upsert episodes for a season from the provider."""
+    if not supports_structure(title.category) or not title.external_id:
         return list(title_season.episodes or [])
 
-    tmdb = TmdbService("tv")
-    episodes_data = await tmdb.get_season_episodes(
-        title.external_id, title_season.season_number
-    )
+    episodes_data = await _fetch_episodes(title, title_season.season_number)
     if episodes_data is None:
         return list(title_season.episodes or [])
 
@@ -94,7 +128,11 @@ async def sync_season_episodes_from_tmdb(
 
     title_season.episode_count = len(synced)
     await db_session.flush()
-    return sorted(synced, key=lambda e: e.episode_number)
+    # TitleSeason.episodes uses selectin; if it was already loaded as empty
+    # before inserts, re-reads in the same session would otherwise stay empty.
+    db_session.expire(title_season, ["episodes"])
+    await db_session.refresh(title_season, attribute_names=["episodes"])
+    return sorted(title_season.episodes, key=lambda e: e.episode_number)
 
 
 async def sync_full_structure(
@@ -103,7 +141,7 @@ async def sync_full_structure(
     *,
     load_all_episodes: bool = False,
 ) -> UserTitle:
-    """Sync seasons (and optionally all episodes) for a series user title."""
+    """Sync seasons (and optionally all episodes) for a series/anime user title."""
     stmt = (
         select(Title)
         .options(selectinload(Title.seasons).selectinload(TitleSeason.episodes))

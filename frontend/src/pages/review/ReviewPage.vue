@@ -278,7 +278,7 @@ const formatDate = (dateStr: string | null | undefined) => {
               {{ entry.score }}/10
             </span>
             <span
-              v-if="entry.title.category === 'series' && entry.avg_score != null"
+              v-if="(entry.title.category === 'series' || entry.title.category === 'anime') && entry.avg_score != null"
               class="detail-subvalue"
             >
               {{ entry.score_is_manual ? 'вручную' : 'средняя' }}
@@ -326,7 +326,7 @@ const formatDate = (dateStr: string | null | undefined) => {
         </div>
 
         <div
-          v-if="entry.title.category === 'series'"
+          v-if="entry.title.category === 'series' || entry.title.category === 'anime'"
           class="review-text-section review-accent-card"
         >
           <SeriesSeasonsEditor

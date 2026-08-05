@@ -2,13 +2,19 @@
 import { type CSSProperties } from 'vue';
 import { UserTitleStatus } from '@/entities/title';
 
-defineProps<{
-  modelValue: UserTitleStatus;
-  statuses: Array<{
-    id: UserTitleStatus;
-    label: string;
-  }>;
-}>();
+withDefaults(
+  defineProps<{
+    modelValue: UserTitleStatus;
+    statuses: Array<{
+      id: UserTitleStatus;
+      label: string;
+    }>;
+    compact?: boolean;
+  }>(),
+  {
+    compact: false,
+  },
+);
 
 defineEmits<{
   (e: 'update:modelValue', value: UserTitleStatus): void;
@@ -70,7 +76,7 @@ const statusColorStyle = (status: UserTitleStatus): CSSProperties => {
 </script>
 
 <template>
-  <div class="space-y-4 pb-5">
+  <div :class="compact ? 'pb-1' : 'space-y-4 pb-5'">
     <div class="flex flex-wrap gap-2">
       <button
         v-for="statusOption in statuses"

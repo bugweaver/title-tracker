@@ -73,7 +73,7 @@ let previousBodyOverflow = '';
 
 const isSeries = computed(() => {
   const type = props.title?.type;
-  return type === 'tv' || type === 'series';
+  return type === 'tv' || type === 'series' || type === 'anime';
 });
 
 watch(() => props.isOpen, (isOpen) => {
@@ -400,11 +400,7 @@ const handleSubmit = async () => {
     }
 
     emit('added');
-
-    // Keep series modal open after first save so seasons can be rated
-    if (!(isSeries.value && userTitleId)) {
-      emit('close');
-    }
+    emit('close');
   } catch (error) {
     console.error('Failed to add title:', error);
   } finally {
@@ -434,7 +430,8 @@ const handleDelete = async () => {
 <template>
   <div v-if="isOpen && title" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4" @click="$emit('close')">
     <div
-      class="game-review-modal flex h-[100dvh] w-full max-w-lg flex-col overflow-hidden shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:rounded-xl"
+      class="game-review-modal flex h-[100dvh] w-full flex-col overflow-hidden shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:rounded-xl"
+      :class="isSeries ? 'max-w-3xl' : 'max-w-lg'"
       :style="reviewToneStyle"
       @click.stop
     >
@@ -455,7 +452,7 @@ const handleDelete = async () => {
           />
           <div
             v-if="isSeries && avgScore != null"
-            class="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]"
+            class="mt-2 flex flex-wrap items-center gap-2 pb-5 text-xs text-[var(--color-text-muted)]"
           >
             <span>
               {{ scoreIsManual ? 'Оценка вручную' : 'Средняя по сезонам' }}
@@ -519,7 +516,7 @@ const handleDelete = async () => {
             @updated="onStructureUpdated"
           />
           <p v-else class="text-xs text-[var(--color-text-muted)]">
-            Сохраните сериал, чтобы оценивать сезоны и серии
+            Сохраните тайтл, чтобы оценивать сезоны и серии
           </p>
         </div>
 

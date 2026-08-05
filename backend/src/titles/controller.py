@@ -17,7 +17,6 @@ from core.models import (
     UserTitle,
     ReviewView,
     UserTitleStatus,
-    TitleCategory,
     TitleSeason,
     UserTitleSeason,
     UserTitleEpisode,
@@ -25,7 +24,10 @@ from core.models import (
 from users.schemas import UserRead
 from user_titles.schemas import SeriesStructureRead, SeasonStructureRead
 from user_titles.structure_read import build_structure_response
-from user_titles.structure_sync import sync_season_episodes_from_tmdb
+from user_titles.structure_sync import (
+    supports_structure,
+    sync_season_episodes_from_tmdb,
+)
 from .schemas import (
     TitleCreate,
     TitleRead,
@@ -143,14 +145,15 @@ class TitleController(Controller):
         user_title = result.scalar_one_or_none()
         if not user_title:
             raise NotFoundException(detail="Entry not found")
-        if user_title.title.category != TitleCategory.SERIES:
-            raise HTTPException(detail="Not a series", status_code=400)
+        if not supports_structure(user_title.title.category):
+            raise HTTPException(detail="Not a series or anime", status_code=400)
 
         seasons_stmt = (
             select(TitleSeason)
             .options(selectinload(TitleSeason.episodes))
             .where(TitleSeason.title_id == user_title.title_id)
             .order_by(TitleSeason.season_number)
+            .execution_options(populate_existing=True)
         )
         seasons_result = await db_session.execute(seasons_stmt)
         catalog_seasons = list(seasons_result.scalars().unique().all())
@@ -189,8 +192,8 @@ class TitleController(Controller):
         user_title = result.scalar_one_or_none()
         if not user_title:
             raise NotFoundException(detail="Entry not found")
-        if user_title.title.category != TitleCategory.SERIES:
-            raise HTTPException(detail="Not a series", status_code=400)
+        if not supports_structure(user_title.title.category):
+            raise HTTPException(detail="Not a series or anime", status_code=400)
 
         season_stmt = select(TitleSeason).where(
             TitleSeason.title_id == user_title.title_id,

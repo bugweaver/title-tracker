@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import {
   UserTitleStatus,
   type SeasonStructure,
@@ -9,6 +9,8 @@ import { titlesApi } from '@/shared/api/titles';
 import GameReviewRating from './GameReviewRating.vue';
 import GameReviewStatusSelector from './GameReviewStatusSelector.vue';
 import GameReviewTextArea from './GameReviewTextArea.vue';
+
+const EPISODE_PAGE_SIZE = 20;
 
 const props = defineProps<{
   userTitleId: number;
@@ -21,11 +23,22 @@ const emit = defineEmits<{
 
 const structure = ref<SeriesStructure | null>(null);
 const isLoading = ref(false);
+const loadError = ref(false);
 const expandedSeasons = ref<Set<number>>(new Set());
 const loadingEpisodes = ref<Set<number>>(new Set());
 const savingKey = ref<string | null>(null);
 const localSeasonReviews = ref<Record<number, string>>({});
+/** season_number → 1-based page of episodes */
+const episodePageBySeason = ref<Record<number, number>>({});
+/** season_number → jump input draft */
+const jumpDraftBySeason = ref<Record<number, string>>({});
+const highlightedEpisode = ref<{ season: number; episode: number } | null>(null);
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+const isSingleSeason = computed(() => (structure.value?.seasons.length ?? 0) === 1);
+const sectionTitle = computed(() =>
+  isSingleSeason.value ? 'Серии' : 'Сезоны и серии',
+);
 
 const debounce = (key: string, fn: () => void, ms = 450) => {
   const existing = debounceTimers.get(key);
@@ -74,17 +87,59 @@ const applyStructure = (next: SeriesStructure) => {
   emit('updated', next);
 };
 
+const ensureSeasonExpanded = async (season: SeasonStructure) => {
+  const number = season.season_number;
+  if (!expandedSeasons.value.has(number)) {
+    expandedSeasons.value.add(number);
+    expandedSeasons.value = new Set(expandedSeasons.value);
+  }
+
+  if (season.episodes_loaded) return;
+
+  loadingEpisodes.value.add(number);
+  loadingEpisodes.value = new Set(loadingEpisodes.value);
+  try {
+    const updatedSeason = await titlesApi.syncSeasonEpisodes(
+      props.userTitleId,
+      number,
+      props.readonly,
+    );
+    if (structure.value) {
+      structure.value = {
+        ...structure.value,
+        seasons: structure.value.seasons.map((s) =>
+          s.season_number === number ? updatedSeason : s,
+        ),
+      };
+    }
+  } catch (error) {
+    console.error('Failed to sync season episodes', error);
+    expandedSeasons.value.delete(number);
+    expandedSeasons.value = new Set(expandedSeasons.value);
+  } finally {
+    loadingEpisodes.value.delete(number);
+    loadingEpisodes.value = new Set(loadingEpisodes.value);
+  }
+};
+
 const loadStructure = async () => {
   if (!props.userTitleId) return;
   isLoading.value = true;
+  loadError.value = false;
   try {
     const data = props.readonly
       ? await titlesApi.getPublicStructure(props.userTitleId)
       : await titlesApi.getStructure(props.userTitleId);
     structure.value = data;
     syncLocalReviews(data);
+    // Single synthetic season (anime): open episodes immediately
+    if (data.seasons.length === 1) {
+      await ensureSeasonExpanded(data.seasons[0]);
+    }
   } catch (error) {
     console.error('Failed to load series structure', error);
+    structure.value = null;
+    loadError.value = true;
   } finally {
     isLoading.value = false;
   }
@@ -94,6 +149,9 @@ watch(
   () => props.userTitleId,
   () => {
     expandedSeasons.value = new Set();
+    episodePageBySeason.value = {};
+    jumpDraftBySeason.value = {};
+    highlightedEpisode.value = null;
     void loadStructure();
   },
   { immediate: true },
@@ -106,34 +164,74 @@ const toggleSeason = async (season: SeasonStructure) => {
     expandedSeasons.value = new Set(expandedSeasons.value);
     return;
   }
+  await ensureSeasonExpanded(season);
+};
 
-  expandedSeasons.value.add(number);
-  expandedSeasons.value = new Set(expandedSeasons.value);
+const episodePageCount = (season: SeasonStructure) =>
+  Math.max(1, Math.ceil(season.episodes.length / EPISODE_PAGE_SIZE));
 
-  if (!season.episodes_loaded) {
-    loadingEpisodes.value.add(number);
-    loadingEpisodes.value = new Set(loadingEpisodes.value);
-    try {
-      const updatedSeason = await titlesApi.syncSeasonEpisodes(
-        props.userTitleId,
-        number,
-        props.readonly,
-      );
-      if (structure.value) {
-        structure.value = {
-          ...structure.value,
-          seasons: structure.value.seasons.map((s) =>
-            s.season_number === number ? { ...updatedSeason, episodes_loaded: true } : s,
-          ),
-        };
-      }
-    } catch (error) {
-      console.error('Failed to sync season episodes', error);
-    } finally {
-      loadingEpisodes.value.delete(number);
-      loadingEpisodes.value = new Set(loadingEpisodes.value);
-    }
-  }
+const currentEpisodePage = (season: SeasonStructure) => {
+  const page = episodePageBySeason.value[season.season_number] ?? 1;
+  return Math.min(Math.max(1, page), episodePageCount(season));
+};
+
+const visibleEpisodes = (season: SeasonStructure) => {
+  const page = currentEpisodePage(season);
+  const start = (page - 1) * EPISODE_PAGE_SIZE;
+  return season.episodes.slice(start, start + EPISODE_PAGE_SIZE);
+};
+
+const episodeRangeLabel = (season: SeasonStructure) => {
+  if (season.episodes.length === 0) return '';
+  const page = currentEpisodePage(season);
+  const start = (page - 1) * EPISODE_PAGE_SIZE + 1;
+  const end = Math.min(page * EPISODE_PAGE_SIZE, season.episodes.length);
+  return `${start}–${end} из ${season.episodes.length}`;
+};
+
+const setEpisodePage = (season: SeasonStructure, page: number) => {
+  const clamped = Math.min(Math.max(1, page), episodePageCount(season));
+  episodePageBySeason.value = {
+    ...episodePageBySeason.value,
+    [season.season_number]: clamped,
+  };
+};
+
+const setJumpDraft = (seasonNumber: number, value: string) => {
+  jumpDraftBySeason.value = {
+    ...jumpDraftBySeason.value,
+    [seasonNumber]: value,
+  };
+};
+
+const episodeDomId = (seasonNumber: number, episodeNumber: number) =>
+  `episode-${props.userTitleId}-${seasonNumber}-${episodeNumber}`;
+
+const scrollToEpisode = async (seasonNumber: number, episodeNumber: number) => {
+  await nextTick();
+  // Wait for page swap / highlight paint inside the modal scroller
+  requestAnimationFrame(() => {
+    const el = document.getElementById(episodeDomId(seasonNumber, episodeNumber));
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  });
+};
+
+const jumpToEpisode = async (season: SeasonStructure) => {
+  const raw = jumpDraftBySeason.value[season.season_number]?.trim();
+  if (!raw) return;
+  const episodeNumber = Number.parseInt(raw, 10);
+  if (!Number.isFinite(episodeNumber) || episodeNumber < 1) return;
+
+  const max = season.episodes.length || season.episode_count || 0;
+  if (max > 0 && episodeNumber > max) return;
+
+  const page = Math.ceil(episodeNumber / EPISODE_PAGE_SIZE);
+  setEpisodePage(season, page);
+  highlightedEpisode.value = {
+    season: season.season_number,
+    episode: episodeNumber,
+  };
+  await scrollToEpisode(season.season_number, episodeNumber);
 };
 
 const updateSeasonScore = (season: SeasonStructure, score: number) => {
@@ -281,22 +379,51 @@ const updateEpisodeStatus = async (
   }
 };
 
-const seasonLabel = (season: SeasonStructure) =>
-  season.name?.trim() || `Сезон ${season.season_number}`;
+const seasonLabel = (season: SeasonStructure) => {
+  const named = season.name?.trim();
+  if (named && !/^сезон\s*1$/i.test(named)) return named;
+  if (isSingleSeason.value) return 'Серии';
+  return named || `Сезон ${season.season_number}`;
+};
 
-const episodeLabel = (episodeNumber: number, name: string | null) =>
-  name?.trim() ? `S${episodeNumber}: ${name}` : `Серия ${episodeNumber}`;
+const episodeLabel = (episodeNumber: number, name: string | null) => {
+  const trimmed = name?.trim();
+  if (!trimmed) return `Эпизод ${episodeNumber}`;
+  // Avoid "Эпизод 1: Серия 1" when the provider name is just a number label
+  const redundant = new RegExp(`^(серия|эпизод)\\s*0*${episodeNumber}$`, 'i');
+  if (redundant.test(trimmed)) return `Эпизод ${episodeNumber}`;
+  return `Эпизод ${episodeNumber}: ${trimmed}`;
+};
+
+const isEpisodeHighlighted = (seasonNumber: number, episodeNumber: number) =>
+  highlightedEpisode.value?.season === seasonNumber
+  && highlightedEpisode.value?.episode === episodeNumber;
 </script>
 
 <template>
   <div class="space-y-3">
-    <div class="flex items-center justify-between gap-2">
-      <h3 class="text-sm font-medium text-[var(--color-text-secondary)]">Сезоны и серии</h3>
+    <div
+      v-if="!isSingleSeason || isLoading"
+      class="flex items-center justify-between gap-2"
+    >
+      <h3
+        v-if="!isSingleSeason"
+        class="text-sm font-medium text-[var(--color-text-secondary)]"
+      >
+        {{ sectionTitle }}
+      </h3>
       <span v-if="isLoading" class="text-xs text-[var(--color-text-muted)]">Загрузка…</span>
     </div>
 
-    <div v-if="!isLoading && structure && structure.seasons.length === 0" class="text-sm text-[var(--color-text-muted)]">
-      Сезоны пока не найдены
+    <div v-if="!isLoading && loadError" class="text-sm text-[var(--color-text-muted)]">
+      Не удалось загрузить {{ isSingleSeason ? 'серии' : 'сезоны' }}.
+      <button type="button" class="ml-1 text-primary-500 hover:underline" @click="loadStructure">
+        Повторить
+      </button>
+    </div>
+
+    <div v-else-if="!isLoading && structure && structure.seasons.length === 0" class="text-sm text-[var(--color-text-muted)]">
+      Серии пока не найдены
     </div>
 
     <div
@@ -340,7 +467,7 @@ const episodeLabel = (episodeNumber: number, name: string | null) =>
             @update:model-value="updateSeasonStatus(season, $event)"
           />
 
-          <div v-if="(season.status ?? UserTitleStatus.PLANNED) !== UserTitleStatus.PLANNED">
+          <div>
             <GameReviewRating
               :model-value="season.score || 0"
               @update:model-value="updateSeasonScore(season, $event)"
@@ -374,31 +501,90 @@ const episodeLabel = (episodeNumber: number, name: string | null) =>
           Загрузка серий…
         </div>
 
-        <div v-else class="space-y-3">
+        <div v-else class="flex flex-col gap-5">
           <div
-            v-for="episode in season.episodes"
-            :key="episode.title_episode_id"
-            class="rounded-md border border-[var(--color-border)]/70 px-2.5 py-2"
+            v-if="season.episodes.length > EPISODE_PAGE_SIZE"
+            class="flex flex-col gap-2 rounded-md border border-[var(--color-border)]/60 px-3 py-2"
           >
-            <div class="mb-2 text-sm text-[var(--color-text)]">
+            <div class="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                class="rounded px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-background)] disabled:opacity-40"
+                :disabled="currentEpisodePage(season) <= 1"
+                @click="setEpisodePage(season, currentEpisodePage(season) - 1)"
+              >
+                ← Назад
+              </button>
+              <span class="text-xs text-[var(--color-text-muted)]">
+                {{ episodeRangeLabel(season) }}
+              </span>
+              <button
+                type="button"
+                class="rounded px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-background)] disabled:opacity-40"
+                :disabled="currentEpisodePage(season) >= episodePageCount(season)"
+                @click="setEpisodePage(season, currentEpisodePage(season) + 1)"
+              >
+                Дальше →
+              </button>
+            </div>
+            <form
+              class="flex items-center gap-2"
+              @submit.prevent="jumpToEpisode(season)"
+            >
+              <label
+                class="shrink-0 text-xs text-[var(--color-text-muted)]"
+                :for="`jump-ep-${season.season_number}`"
+              >
+                К серии
+              </label>
+              <input
+                :id="`jump-ep-${season.season_number}`"
+                :value="jumpDraftBySeason[season.season_number] ?? ''"
+                type="number"
+                min="1"
+                :max="season.episodes.length || season.episode_count || undefined"
+                inputmode="numeric"
+                placeholder="№"
+                class="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-sm text-[var(--color-text)] outline-none focus:border-primary-500"
+                @input="setJumpDraft(season.season_number, ($event.target as HTMLInputElement).value)"
+              >
+              <button
+                type="submit"
+                class="rounded-md px-2 py-1 text-xs text-primary-500 hover:underline"
+              >
+                Перейти
+              </button>
+            </form>
+          </div>
+
+          <div
+            v-for="episode in visibleEpisodes(season)"
+            :id="episodeDomId(season.season_number, episode.episode_number)"
+            :key="episode.title_episode_id"
+            class="flex flex-col gap-4 rounded-md border px-3 py-3"
+            :class="isEpisodeHighlighted(season.season_number, episode.episode_number)
+              ? 'border-primary-500 bg-primary-500/5'
+              : 'border-[var(--color-border)]/70'"
+          >
+            <div class="text-sm text-[var(--color-text)]">
               {{ episodeLabel(episode.episode_number, episode.name) }}
               <span v-if="episode.score != null" class="ml-1 text-xs text-[var(--color-text-muted)]">
                 {{ episode.score }}/10
               </span>
             </div>
 
-            <template v-if="!readonly">
+            <div v-if="!readonly" class="flex flex-col gap-3">
               <GameReviewStatusSelector
+                compact
                 :model-value="episode.status ?? UserTitleStatus.PLANNED"
                 :statuses="episodeStatuses"
                 @update:model-value="updateEpisodeStatus(season, episode.episode_number, $event)"
               />
               <GameReviewRating
-                v-if="(episode.status ?? UserTitleStatus.PLANNED) !== UserTitleStatus.PLANNED"
                 :model-value="episode.score || 0"
                 @update:model-value="updateEpisodeScore(season, episode.episode_number, $event)"
               />
-            </template>
+            </div>
           </div>
 
           <div

@@ -38,6 +38,7 @@ from .score_cascade import (
     reset_season_score_to_avg,
 )
 from .structure_sync import (
+    supports_structure,
     sync_seasons_from_tmdb,
     sync_season_episodes_from_tmdb,
     sync_full_structure,
@@ -309,7 +310,7 @@ class UserTitlesController(Controller):
 
         await db_session.flush()
 
-        if category == TitleCategory.SERIES:
+        if supports_structure(category):
             await sync_full_structure(db_session, user_title, load_all_episodes=False)
 
         should_notify = is_new or has_meaningful_change
@@ -375,6 +376,7 @@ class UserTitlesController(Controller):
             .options(selectinload(TitleSeason.episodes))
             .where(TitleSeason.title_id == user_title.title_id)
             .order_by(TitleSeason.season_number)
+            .execution_options(populate_existing=True)
         )
         seasons_result = await db_session.execute(seasons_stmt)
         catalog_seasons = list(seasons_result.scalars().unique().all())
@@ -398,7 +400,19 @@ class UserTitlesController(Controller):
         user_seasons = list(user_seasons_result.scalars().unique().all())
         user_seasons_by_catalog_id = {us.title_season_id: us for us in user_seasons}
 
-        await db_session.refresh(user_title)
+        # Refresh only scalars. A full refresh re-selectins UserTitle.seasons and
+        # expires already-loaded UserTitleSeason.episodes → MissingGreenlet in async.
+        await db_session.refresh(
+            user_title,
+            attribute_names=[
+                "score",
+                "avg_score",
+                "score_is_manual",
+                "status",
+                "review_text",
+                "is_spoiler",
+            ],
+        )
         return build_structure_response(
             user_title, catalog_seasons, user_seasons_by_catalog_id
         )
@@ -413,8 +427,8 @@ class UserTitlesController(Controller):
         user_title = await _get_owned_user_title(
             db_session, user_title_id, request.user.id
         )
-        if user_title.title.category != TitleCategory.SERIES:
-            raise HTTPException(detail="Not a series", status_code=400)
+        if not supports_structure(user_title.title.category):
+            raise HTTPException(detail="Not a series or anime", status_code=400)
 
         structure = await self._read_structure(db_session, user_title)
         await db_session.commit()
@@ -430,8 +444,8 @@ class UserTitlesController(Controller):
         user_title = await _get_owned_user_title(
             db_session, user_title_id, request.user.id
         )
-        if user_title.title.category != TitleCategory.SERIES:
-            raise HTTPException(detail="Not a series", status_code=400)
+        if not supports_structure(user_title.title.category):
+            raise HTTPException(detail="Not a series or anime", status_code=400)
 
         await sync_full_structure(db_session, user_title, load_all_episodes=False)
         structure = await self._read_structure(
@@ -451,8 +465,8 @@ class UserTitlesController(Controller):
         user_title = await _get_owned_user_title(
             db_session, user_title_id, request.user.id
         )
-        if user_title.title.category != TitleCategory.SERIES:
-            raise HTTPException(detail="Not a series", status_code=400)
+        if not supports_structure(user_title.title.category):
+            raise HTTPException(detail="Not a series or anime", status_code=400)
 
         _user_season, title_season = await _get_or_create_user_season(
             db_session, user_title, season_number
@@ -479,8 +493,8 @@ class UserTitlesController(Controller):
         user_title = await _get_owned_user_title(
             db_session, user_title_id, request.user.id
         )
-        if user_title.title.category != TitleCategory.SERIES:
-            raise HTTPException(detail="Not a series", status_code=400)
+        if not supports_structure(user_title.title.category):
+            raise HTTPException(detail="Not a series or anime", status_code=400)
 
         user_season, _title_season = await _get_or_create_user_season(
             db_session, user_title, season_number
@@ -525,8 +539,8 @@ class UserTitlesController(Controller):
         user_title = await _get_owned_user_title(
             db_session, user_title_id, request.user.id
         )
-        if user_title.title.category != TitleCategory.SERIES:
-            raise HTTPException(detail="Not a series", status_code=400)
+        if not supports_structure(user_title.title.category):
+            raise HTTPException(detail="Not a series or anime", status_code=400)
 
         user_season, title_season = await _get_or_create_user_season(
             db_session, user_title, season_number
@@ -561,7 +575,7 @@ class UserTitlesController(Controller):
         )
         await reset_series_score_to_avg(db_session, user_title)
 
-        if user_title.title.category == TitleCategory.SERIES:
+        if supports_structure(user_title.title.category):
             structure = await self._read_structure(db_session, user_title)
             await db_session.commit()
             return structure
@@ -589,8 +603,8 @@ class UserTitlesController(Controller):
         user_title = await _get_owned_user_title(
             db_session, user_title_id, request.user.id
         )
-        if user_title.title.category != TitleCategory.SERIES:
-            raise HTTPException(detail="Not a series", status_code=400)
+        if not supports_structure(user_title.title.category):
+            raise HTTPException(detail="Not a series or anime", status_code=400)
 
         user_season, _title_season = await _get_or_create_user_season(
             db_session, user_title, season_number

@@ -9,6 +9,7 @@ dependencies = [
     "aiohttp>=3.13.3",
     "alembic>=1.18.3",
     "asyncpg>=0.31.0",
+    "httpx[socks]>=0.28.1",
     "litestar[standard,cryptography,jwt,pydantic,redis,sqlalchemy]>=2.19.0",
     "passlib[bcrypt]>=1.7.4",
     "pydantic-settings>=2.12.0",
