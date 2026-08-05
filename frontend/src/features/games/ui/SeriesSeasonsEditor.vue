@@ -133,8 +133,9 @@ const loadStructure = async () => {
     structure.value = data;
     syncLocalReviews(data);
     // Single synthetic season (anime): open episodes immediately
-    if (data.seasons.length === 1) {
-      await ensureSeasonExpanded(data.seasons[0]);
+    const [onlySeason] = data.seasons;
+    if (onlySeason && data.seasons.length === 1) {
+      await ensureSeasonExpanded(onlySeason);
     }
   } catch (error) {
     console.error('Failed to load series structure', error);
