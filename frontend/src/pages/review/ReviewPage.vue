@@ -8,6 +8,7 @@ import { useUserStore } from '@/entities/user';
 import { usersApi, type User } from '@/shared/api';
 import { titlesApi } from '@/shared/api/titles';
 import GamePlatformBadge from '@/features/games/ui/GamePlatformBadge.vue';
+import SeriesSeasonsEditor from '@/features/games/ui/SeriesSeasonsEditor.vue';
 
 interface ParsedSegment {
   id: number;
@@ -276,6 +277,13 @@ const formatDate = (dateStr: string | null | undefined) => {
             <span class="detail-value score" :style="{ color: scoreColor(entry.score) }">
               {{ entry.score }}/10
             </span>
+            <span
+              v-if="entry.title.category === 'series' && entry.avg_score != null"
+              class="detail-subvalue"
+            >
+              {{ entry.score_is_manual ? 'вручную' : 'средняя' }}
+              · ср. {{ entry.avg_score }}
+            </span>
           </div>
           <div class="detail-card review-accent-card" v-if="entry.finished_at">
             <span class="detail-label">Дата завершения</span>
@@ -315,6 +323,16 @@ const formatDate = (dateStr: string | null | undefined) => {
 
         <div v-else class="no-review review-accent-card">
           Отзыв не оставлен
+        </div>
+
+        <div
+          v-if="entry.title.category === 'series'"
+          class="review-text-section review-accent-card"
+        >
+          <SeriesSeasonsEditor
+            :user-title-id="entry.id"
+            readonly
+          />
         </div>
 
         <button
@@ -670,6 +688,14 @@ const formatDate = (dateStr: string | null | undefined) => {
 
 .detail-value.score {
   font-size: 24px;
+}
+
+.detail-subvalue {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
 }
 
 .views-meta {

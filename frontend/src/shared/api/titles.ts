@@ -1,8 +1,14 @@
 import { apiClient } from './client';
-import type { GamePlatform, UserTitle } from '@/entities/title';
+import type {
+  GamePlatform,
+  SeriesStructure,
+  SeasonStructure,
+  UserTitle,
+  UserTitleStatus,
+} from '@/entities/title';
 import type { User } from './users';
 
-export type TitleType = 'game' | 'movie' | 'tv' | 'anime' | 'manga' | 'comics' | 'book';
+export type TitleType = 'game' | 'movie' | 'tv' | 'series' | 'anime' | 'manga' | 'comics' | 'book';
 
 export interface Screenshot {
   id: number;
@@ -16,17 +22,17 @@ export interface ReviewViewsResponse {
 }
 
 export interface TitleSearchResult {
-  external_id: string; // Changed from id
-  title: string;       // Changed from name
+  external_id: string;
+  title: string;
   original_title?: string;
   release_year?: number;
-  poster_url?: string; // Changed from cover_url
-  type: TitleType;     // Added type
-  genres: string[];    // Added genres
+  poster_url?: string;
+  type: TitleType;
+  genres: string[];
 }
 
 export interface AddUserTitleRequest {
-  external_id: string; // Changed from igdb_id
+  external_id: string;
   type: TitleType;
   name: string;
   cover_url?: string;
@@ -34,6 +40,7 @@ export interface AddUserTitleRequest {
   genres: string[];
   status: string;
   score?: number;
+  score_is_manual?: boolean;
   review_text?: string;
   is_spoiler?: boolean;
   finished_at?: string;
@@ -42,13 +49,32 @@ export interface AddUserTitleRequest {
   increment_completion?: boolean;
 }
 
+export interface UpdateSeasonRequest {
+  status?: UserTitleStatus;
+  score?: number;
+  clear_score?: boolean;
+  review_text?: string;
+  is_spoiler?: boolean;
+}
+
+export interface UpdateEpisodeRequest {
+  status?: UserTitleStatus;
+  score?: number;
+  clear_score?: boolean;
+}
+
 export const titlesApi = {
-  search: (query: string, type: TitleType) => 
+  search: (query: string, type: TitleType) =>
     apiClient.get<TitleSearchResult[]>(`/search?q=${encodeURIComponent(query)}&type=${type}`),
 
   add: (data: AddUserTitleRequest) =>
-    apiClient.post<{ id: number }>('/user-titles', data),
-    
+    apiClient.post<{
+      id: number;
+      avg_score?: number | null;
+      score_is_manual?: boolean;
+      score?: number | null;
+    }>('/user-titles', data),
+
   getUserTitles: (userId: number) =>
     apiClient.get<UserTitle[]>(`/titles/user/${userId}`),
 
@@ -69,4 +95,45 @@ export const titlesApi = {
 
   getViewers: (userTitleId: number) =>
     apiClient.get<ReviewViewsResponse>(`/titles/entry/${userTitleId}/viewers`),
+
+  getStructure: (userTitleId: number) =>
+    apiClient.get<SeriesStructure>(`/user-titles/${userTitleId}/structure`),
+
+  getPublicStructure: (userTitleId: number) =>
+    apiClient.get<SeriesStructure>(`/titles/entry/${userTitleId}/structure`),
+
+  syncStructure: (userTitleId: number) =>
+    apiClient.post<SeriesStructure>(`/user-titles/${userTitleId}/sync-structure`),
+
+  syncSeasonEpisodes: (userTitleId: number, seasonNumber: number, readonly = false) =>
+    apiClient.post<SeasonStructure>(
+      readonly
+        ? `/titles/entry/${userTitleId}/seasons/${seasonNumber}/sync-episodes`
+        : `/user-titles/${userTitleId}/seasons/${seasonNumber}/sync-episodes`,
+    ),
+
+  updateSeason: (userTitleId: number, seasonNumber: number, data: UpdateSeasonRequest) =>
+    apiClient.put<SeriesStructure>(
+      `/user-titles/${userTitleId}/seasons/${seasonNumber}`,
+      data,
+    ),
+
+  updateEpisode: (
+    userTitleId: number,
+    seasonNumber: number,
+    episodeNumber: number,
+    data: UpdateEpisodeRequest,
+  ) =>
+    apiClient.put<SeriesStructure>(
+      `/user-titles/${userTitleId}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
+      data,
+    ),
+
+  resetSeriesScore: (userTitleId: number) =>
+    apiClient.post<SeriesStructure>(`/user-titles/${userTitleId}/reset-score`),
+
+  resetSeasonScore: (userTitleId: number, seasonNumber: number) =>
+    apiClient.post<SeriesStructure>(
+      `/user-titles/${userTitleId}/seasons/${seasonNumber}/reset-score`,
+    ),
 };

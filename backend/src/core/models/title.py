@@ -12,6 +12,7 @@ from .mixins import IntIdPkMixin
 if TYPE_CHECKING:
     from .user import User
     from .screenshot import TitleScreenshot
+    from .season import TitleSeason, UserTitleSeason
 
 
 class TitleCategory(str, Enum):
@@ -51,6 +52,14 @@ class Title(IntIdPkMixin, Base):
     release_year: Mapped[int | None] = mapped_column()
     genres: Mapped[list[str] | None] = mapped_column(ARRAY(String))
 
+    seasons: Mapped[list["TitleSeason"]] = relationship(
+        "TitleSeason",
+        back_populates="title",
+        cascade="all, delete-orphan",
+        order_by="TitleSeason.season_number",
+        lazy="selectin",
+    )
+
 
 class UserTitle(IntIdPkMixin, Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -58,6 +67,8 @@ class UserTitle(IntIdPkMixin, Base):
     
     status: Mapped[UserTitleStatus] = mapped_column(nullable=False, default=UserTitleStatus.PLANNED)
     score: Mapped[float | None] = mapped_column(Float)  # 1.0-10.0
+    avg_score: Mapped[float | None] = mapped_column(Float)
+    score_is_manual: Mapped[bool] = mapped_column(default=False, server_default="false")
     review_text: Mapped[str | None] = mapped_column(Text)
     is_spoiler: Mapped[bool] = mapped_column(default=False, server_default="false")
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
@@ -76,6 +87,12 @@ class UserTitle(IntIdPkMixin, Base):
         backref="user_title",
         cascade="all, delete-orphan",
         order_by="TitleScreenshot.position",
+        lazy="selectin",
+    )
+    seasons: Mapped[list["UserTitleSeason"]] = relationship(
+        "UserTitleSeason",
+        back_populates="user_title",
+        cascade="all, delete-orphan",
         lazy="selectin",
     )
 

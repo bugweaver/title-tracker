@@ -11,6 +11,7 @@ class ContentDTO(BaseModel):
     display_title: Optional[str] = None # can use this if needed, or rely on title
     type: str
     genres: List[str] = []
+    number_of_seasons: Optional[int] = None
 
 class ContentProvider(ABC):
     @abstractmethod

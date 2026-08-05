@@ -7,6 +7,7 @@ import {
   useTitleStore,
   isReadingCategory,
   getReplayCompletionLabel,
+  type SeriesStructure,
 } from '@/entities/title';
 import GameReviewCompletionDate from './GameReviewCompletionDate.vue';
 import GameReviewFooter from './GameReviewFooter.vue';
@@ -19,6 +20,7 @@ import GameReviewScreenshots from './GameReviewScreenshots.vue';
 import GameReviewStatusSelector from './GameReviewStatusSelector.vue';
 import GameReviewTextArea from './GameReviewTextArea.vue';
 import ImageLightbox from './ImageLightbox.vue';
+import SeriesSeasonsEditor from './SeriesSeasonsEditor.vue';
 
 const titleStore = useTitleStore();
 
@@ -29,6 +31,8 @@ const props = defineProps<{
     userTitleId?: number;
     status: UserTitleStatus;
     score: number | null;
+    avg_score?: number | null;
+    score_is_manual?: boolean;
     review_text: string | null;
     is_spoiler?: boolean;
     finished_at?: string | null;
@@ -54,6 +58,10 @@ const selectedPlatform = ref<GamePlatform | null>(null);
 const isSubmitting = ref(false);
 const isDeleting = ref(false);
 const showDeleteConfirm = ref(false);
+const scoreIsManual = ref(false);
+const avgScore = ref<number | null>(null);
+const activeUserTitleId = ref<number | null>(null);
+const isResettingScore = ref(false);
 
 const pendingFiles = ref<File[]>([]);
 const pendingPreviews = ref<string[]>([]);
@@ -62,6 +70,11 @@ const deletedScreenshotIds = ref<number[]>([]);
 const isUploadingScreenshots = ref(false);
 const MAX_SCREENSHOTS = 10;
 let previousBodyOverflow = '';
+
+const isSeries = computed(() => {
+  const type = props.title?.type;
+  return type === 'tv' || type === 'series';
+});
 
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
@@ -75,6 +88,9 @@ watch(() => props.isOpen, (isOpen) => {
       selectedPlatform.value = props.initialData.game_platform || null;
       existingScreenshots.value = props.initialData.screenshots ? [...props.initialData.screenshots] : [];
       incrementCompletion.value = false;
+      scoreIsManual.value = Boolean(props.initialData.score_is_manual);
+      avgScore.value = props.initialData.avg_score ?? null;
+      activeUserTitleId.value = props.initialData.userTitleId ?? null;
       if (props.initialData.finished_at) {
         const date = new Date(props.initialData.finished_at);
         selectedYear.value = date.getFullYear();
@@ -91,6 +107,9 @@ watch(() => props.isOpen, (isOpen) => {
       incrementCompletion.value = false;
       selectedPlatform.value = null;
       existingScreenshots.value = [];
+      scoreIsManual.value = false;
+      avgScore.value = null;
+      activeUserTitleId.value = null;
       const now = new Date();
       selectedYear.value = now.getFullYear();
       selectedMonth.value = now.getMonth();
@@ -118,7 +137,8 @@ const canSelectGamePlatform = computed(() =>
 );
 
 const canIncrementCompletion = computed(() =>
-  Boolean(props.initialData?.userTitleId) && status.value === UserTitleStatus.COMPLETED
+  Boolean(activeUserTitleId.value || props.initialData?.userTitleId)
+  && status.value === UserTitleStatus.COMPLETED
 );
 
 const replayCompletionLabel = computed(() =>
@@ -282,6 +302,36 @@ const closePreviewLightbox = () => {
   previewLightboxOpen.value = false;
 };
 
+const onRatingChange = (value: number) => {
+  rating.value = value;
+  if (isSeries.value && value > 0) {
+    scoreIsManual.value = true;
+  }
+};
+
+const onStructureUpdated = (structure: SeriesStructure) => {
+  avgScore.value = structure.avg_score;
+  scoreIsManual.value = structure.score_is_manual;
+  if (!scoreIsManual.value && structure.score != null) {
+    rating.value = structure.score;
+  } else if (structure.score != null) {
+    rating.value = structure.score;
+  }
+};
+
+const resetSeriesScore = async () => {
+  if (!activeUserTitleId.value) return;
+  isResettingScore.value = true;
+  try {
+    const structure = await titlesApi.resetSeriesScore(activeUserTitleId.value);
+    onStructureUpdated(structure);
+  } catch (error) {
+    console.error('Failed to reset series score', error);
+  } finally {
+    isResettingScore.value = false;
+  }
+};
+
 const handleSubmit = async () => {
   if (!props.title) return;
 
@@ -295,6 +345,9 @@ const handleSubmit = async () => {
     finishedAtIso = date.toISOString();
   }
 
+  const scoreValue =
+    status.value === UserTitleStatus.PLANNED ? undefined : (rating.value || undefined);
+
   try {
     const result = await titlesApi.add({
       external_id: props.title.external_id,
@@ -304,7 +357,8 @@ const handleSubmit = async () => {
       release_year: props.title.release_year,
       genres: props.title.genres || [],
       status: status.value,
-      score: status.value === UserTitleStatus.PLANNED ? undefined : (rating.value || undefined),
+      score: scoreValue,
+      score_is_manual: isSeries.value ? (scoreValue ? scoreIsManual.value : false) : undefined,
       review_text: review.value || undefined,
       is_spoiler: /<[^<>]+>/.test(review.value),
       finished_at: finishedAtIso,
@@ -313,9 +367,14 @@ const handleSubmit = async () => {
       increment_completion: canIncrementCompletion.value && incrementCompletion.value,
     });
 
-    const userTitleId = result.id || props.initialData?.userTitleId;
+    const userTitleId = result.id || activeUserTitleId.value || props.initialData?.userTitleId;
 
     if (userTitleId) {
+      activeUserTitleId.value = userTitleId;
+      if (result.avg_score !== undefined) avgScore.value = result.avg_score ?? null;
+      if (result.score_is_manual !== undefined) scoreIsManual.value = result.score_is_manual;
+      if (result.score !== undefined && result.score != null) rating.value = result.score;
+
       isUploadingScreenshots.value = true;
 
       for (const id of deletedScreenshotIds.value) {
@@ -334,11 +393,18 @@ const handleSubmit = async () => {
         }
       }
 
+      pendingFiles.value = [];
+      pendingPreviews.value = [];
+      deletedScreenshotIds.value = [];
       isUploadingScreenshots.value = false;
     }
 
     emit('added');
-    emit('close');
+
+    // Keep series modal open after first save so seasons can be rated
+    if (!(isSeries.value && userTitleId)) {
+      emit('close');
+    }
   } catch (error) {
     console.error('Failed to add title:', error);
   } finally {
@@ -348,11 +414,12 @@ const handleSubmit = async () => {
 };
 
 const handleDelete = async () => {
-  if (!props.initialData?.userTitleId) return;
+  const userTitleId = activeUserTitleId.value || props.initialData?.userTitleId;
+  if (!userTitleId) return;
 
   isDeleting.value = true;
   try {
-    await titleStore.deleteTitle(props.initialData.userTitleId);
+    await titleStore.deleteTitle(userTitleId);
     emit('added');
     emit('close');
   } catch (error) {
@@ -381,10 +448,30 @@ const handleDelete = async () => {
       />
 
       <div class="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto p-4 sm:space-y-8 sm:p-6">
-        <GameReviewRating
-          v-if="status !== UserTitleStatus.PLANNED"
-          v-model="rating"
-        />
+        <div v-if="status !== UserTitleStatus.PLANNED">
+          <GameReviewRating
+            :model-value="rating"
+            @update:model-value="onRatingChange"
+          />
+          <div
+            v-if="isSeries && avgScore != null"
+            class="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]"
+          >
+            <span>
+              {{ scoreIsManual ? 'Оценка вручную' : 'Средняя по сезонам' }}
+              · среднее {{ avgScore }}
+            </span>
+            <button
+              v-if="scoreIsManual && activeUserTitleId"
+              type="button"
+              class="text-primary-500 hover:underline disabled:opacity-50"
+              :disabled="isResettingScore"
+              @click="resetSeriesScore"
+            >
+              Сбросить к средней
+            </button>
+          </div>
+        </div>
 
         <GameReviewStatusSelector
           v-model="status"
@@ -425,6 +512,17 @@ const handleDelete = async () => {
 
         <GameReviewTextArea v-model="review" class="pt-3" />
 
+        <div v-if="isSeries" class="pt-2">
+          <SeriesSeasonsEditor
+            v-if="activeUserTitleId"
+            :user-title-id="activeUserTitleId"
+            @updated="onStructureUpdated"
+          />
+          <p v-else class="text-xs text-[var(--color-text-muted)]">
+            Сохраните сериал, чтобы оценивать сезоны и серии
+          </p>
+        </div>
+
         <GameReviewScreenshots
           :existing-screenshots="existingScreenshots"
           :deleted-screenshot-ids="deletedScreenshotIds"
@@ -441,7 +539,7 @@ const handleDelete = async () => {
 
       <GameReviewFooter
         v-model:show-delete-confirm="showDeleteConfirm"
-        :has-user-title="Boolean(initialData?.userTitleId)"
+        :has-user-title="Boolean(activeUserTitleId || initialData?.userTitleId)"
         :is-deleting="isDeleting"
         :is-submitting="isSubmitting"
         :is-uploading-screenshots="isUploadingScreenshots"

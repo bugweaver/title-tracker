@@ -11,8 +11,21 @@ from litestar.exceptions import HTTPException, NotFoundException
 from litestar.security.jwt import Token
 
 from core.models.db_helper import get_db_session
-from core.models import User, Title, UserTitle, ReviewView, UserTitleStatus
+from core.models import (
+    User,
+    Title,
+    UserTitle,
+    ReviewView,
+    UserTitleStatus,
+    TitleCategory,
+    TitleSeason,
+    UserTitleSeason,
+    UserTitleEpisode,
+)
 from users.schemas import UserRead
+from user_titles.schemas import SeriesStructureRead, SeasonStructureRead
+from user_titles.structure_read import build_structure_response
+from user_titles.structure_sync import sync_season_episodes_from_tmdb
 from .schemas import (
     TitleCreate,
     TitleRead,
@@ -113,6 +126,91 @@ class TitleController(Controller):
             item.view_count = count_result.scalar() or 0
 
         return item
+
+    @get("/entry/{user_title_id:int}/structure")
+    async def get_user_title_structure(
+        self,
+        user_title_id: int,
+        db_session: AsyncSession,
+    ) -> SeriesStructureRead:
+        """Public series structure (seasons/episodes) for a user-title entry."""
+        stmt = (
+            select(UserTitle)
+            .options(selectinload(UserTitle.title))
+            .where(UserTitle.id == user_title_id)
+        )
+        result = await db_session.execute(stmt)
+        user_title = result.scalar_one_or_none()
+        if not user_title:
+            raise NotFoundException(detail="Entry not found")
+        if user_title.title.category != TitleCategory.SERIES:
+            raise HTTPException(detail="Not a series", status_code=400)
+
+        seasons_stmt = (
+            select(TitleSeason)
+            .options(selectinload(TitleSeason.episodes))
+            .where(TitleSeason.title_id == user_title.title_id)
+            .order_by(TitleSeason.season_number)
+        )
+        seasons_result = await db_session.execute(seasons_stmt)
+        catalog_seasons = list(seasons_result.scalars().unique().all())
+
+        user_seasons_stmt = (
+            select(UserTitleSeason)
+            .options(
+                selectinload(UserTitleSeason.episodes).selectinload(
+                    UserTitleEpisode.title_episode
+                )
+            )
+            .where(UserTitleSeason.user_title_id == user_title.id)
+        )
+        user_seasons_result = await db_session.execute(user_seasons_stmt)
+        user_seasons = list(user_seasons_result.scalars().unique().all())
+        user_seasons_by_catalog_id = {us.title_season_id: us for us in user_seasons}
+
+        return build_structure_response(
+            user_title, catalog_seasons, user_seasons_by_catalog_id
+        )
+
+    @post("/entry/{user_title_id:int}/seasons/{season_number:int}/sync-episodes")
+    async def sync_public_season_episodes(
+        self,
+        user_title_id: int,
+        season_number: int,
+        db_session: AsyncSession,
+    ) -> SeasonStructureRead:
+        """Sync episode catalog for a season (any authenticated viewer)."""
+        stmt = (
+            select(UserTitle)
+            .options(selectinload(UserTitle.title))
+            .where(UserTitle.id == user_title_id)
+        )
+        result = await db_session.execute(stmt)
+        user_title = result.scalar_one_or_none()
+        if not user_title:
+            raise NotFoundException(detail="Entry not found")
+        if user_title.title.category != TitleCategory.SERIES:
+            raise HTTPException(detail="Not a series", status_code=400)
+
+        season_stmt = select(TitleSeason).where(
+            TitleSeason.title_id == user_title.title_id,
+            TitleSeason.season_number == season_number,
+        )
+        season_result = await db_session.execute(season_stmt)
+        title_season = season_result.scalar_one_or_none()
+        if not title_season:
+            raise NotFoundException(detail="Season not found")
+
+        await sync_season_episodes_from_tmdb(
+            db_session, user_title.title, title_season
+        )
+        await db_session.commit()
+
+        structure = await self.get_user_title_structure(user_title_id, db_session)
+        for season in structure.seasons:
+            if season.season_number == season_number:
+                return season
+        raise NotFoundException(detail="Season not found")
 
     @post("/entry/{user_title_id:int}/view")
     async def record_review_view(

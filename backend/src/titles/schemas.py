@@ -38,6 +38,8 @@ class UserTitleRead(UserTitleBase):
     user_id: int
     title_id: int
     is_spoiler: bool = False
+    avg_score: float | None = None
+    score_is_manual: bool = False
     created_at: datetime
     updated_at: datetime
     finished_at: datetime | None = None

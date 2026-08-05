@@ -1,18 +1,173 @@
 from typing import Any
 from datetime import datetime
 
-from litestar import Controller, post, delete, Request
+from litestar import Controller, post, delete, get, put, Request
 from litestar.di import Provide
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import HTTPException, NotFoundException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from core.models import User, Title, UserTitle, TitleCategory, UserTitleStatus
+from core.models import (
+    User,
+    Title,
+    UserTitle,
+    TitleCategory,
+    UserTitleStatus,
+    TitleSeason,
+    TitleEpisode,
+    UserTitleSeason,
+    UserTitleEpisode,
+)
 from core.models.notification import Notification, NotificationType
 from core.models.user import subscriptions_table
 from core.models.db_helper import get_db_session
 from screenshots.schemas import ScreenshotRead
-from .schemas import AddUserTitleRequest, UserTitleRead
+from .schemas import (
+    AddUserTitleRequest,
+    UserTitleRead,
+    UpdateSeasonRequest,
+    UpdateEpisodeRequest,
+    SeriesStructureRead,
+    SeasonStructureRead,
+)
+from .score_cascade import (
+    cascade_after_episode_change,
+    cascade_after_season_change,
+    reset_series_score_to_avg,
+    reset_season_score_to_avg,
+)
+from .structure_sync import (
+    sync_seasons_from_tmdb,
+    sync_season_episodes_from_tmdb,
+    sync_full_structure,
+)
+from .structure_read import build_structure_response
+
+
+def _spoiler_from_text(text: str | None) -> bool:
+    if not text:
+        return False
+    return "<" in text and ">" in text
+
+
+async def _get_owned_user_title(
+    db_session: AsyncSession,
+    user_title_id: int,
+    user_id: int,
+) -> UserTitle:
+    stmt = (
+        select(UserTitle)
+        .options(selectinload(UserTitle.title))
+        .where(UserTitle.id == user_title_id)
+    )
+    result = await db_session.execute(stmt)
+    user_title = result.scalar_one_or_none()
+    if not user_title or user_title.user_id != user_id:
+        raise NotFoundException(detail="Title not found")
+    return user_title
+
+
+async def _get_or_create_user_season(
+    db_session: AsyncSession,
+    user_title: UserTitle,
+    season_number: int,
+) -> tuple[UserTitleSeason, TitleSeason]:
+    catalog_stmt = select(TitleSeason).where(
+        TitleSeason.title_id == user_title.title_id,
+        TitleSeason.season_number == season_number,
+    )
+    catalog_result = await db_session.execute(catalog_stmt)
+    title_season = catalog_result.scalar_one_or_none()
+
+    if not title_season:
+        await sync_seasons_from_tmdb(db_session, user_title.title)
+        catalog_result = await db_session.execute(catalog_stmt)
+        title_season = catalog_result.scalar_one_or_none()
+
+    if not title_season:
+        raise NotFoundException(detail="Season not found")
+
+    user_stmt = select(UserTitleSeason).where(
+        UserTitleSeason.user_title_id == user_title.id,
+        UserTitleSeason.title_season_id == title_season.id,
+    )
+    user_result = await db_session.execute(user_stmt)
+    user_season = user_result.scalar_one_or_none()
+
+    if not user_season:
+        user_season = UserTitleSeason(
+            user_title_id=user_title.id,
+            title_season_id=title_season.id,
+            status=UserTitleStatus.PLANNED,
+        )
+        db_session.add(user_season)
+        await db_session.flush()
+
+    return user_season, title_season
+
+
+async def _get_or_create_user_episode(
+    db_session: AsyncSession,
+    user_title: UserTitle,
+    user_season: UserTitleSeason,
+    title_season: TitleSeason,
+    episode_number: int,
+) -> UserTitleEpisode:
+    ep_stmt = select(TitleEpisode).where(
+        TitleEpisode.title_season_id == title_season.id,
+        TitleEpisode.episode_number == episode_number,
+    )
+    ep_result = await db_session.execute(ep_stmt)
+    title_episode = ep_result.scalar_one_or_none()
+
+    if not title_episode:
+        await sync_season_episodes_from_tmdb(
+            db_session, user_title.title, title_season
+        )
+        ep_result = await db_session.execute(ep_stmt)
+        title_episode = ep_result.scalar_one_or_none()
+
+    if not title_episode:
+        raise NotFoundException(detail="Episode not found")
+
+    user_ep_stmt = select(UserTitleEpisode).where(
+        UserTitleEpisode.user_title_season_id == user_season.id,
+        UserTitleEpisode.title_episode_id == title_episode.id,
+    )
+    user_ep_result = await db_session.execute(user_ep_stmt)
+    user_episode = user_ep_result.scalar_one_or_none()
+
+    if not user_episode:
+        user_episode = UserTitleEpisode(
+            user_title_season_id=user_season.id,
+            title_episode_id=title_episode.id,
+            status=UserTitleStatus.PLANNED,
+        )
+        db_session.add(user_episode)
+        await db_session.flush()
+
+    return user_episode
+
+
+def _to_user_title_read(user_title: UserTitle) -> UserTitleRead:
+    return UserTitleRead(
+        id=user_title.id,
+        user_id=user_title.user_id,
+        title_id=user_title.title_id,
+        status=user_title.status,
+        score=user_title.score,
+        avg_score=user_title.avg_score,
+        score_is_manual=user_title.score_is_manual,
+        is_spoiler=user_title.is_spoiler,
+        finished_at=user_title.finished_at,
+        times_completed=user_title.times_completed,
+        is_completed_100_percent=user_title.is_completed_100_percent,
+        game_platform=user_title.game_platform,
+        screenshots=[
+            ScreenshotRead.model_validate(s) for s in user_title.screenshots
+        ],
+    )
 
 
 class UserTitlesController(Controller):
@@ -31,7 +186,6 @@ class UserTitlesController(Controller):
     ) -> UserTitleRead:
         user_id = request.user.id
 
-        # Map type string to Enum
         category_map = {
             "game": TitleCategory.GAME,
             "movie": TitleCategory.MOVIE,
@@ -44,7 +198,6 @@ class UserTitlesController(Controller):
         }
         category = category_map.get(data.type, TitleCategory.GAME)
 
-        # 1. Find or Create Title (scoped by category — external IDs can collide across providers)
         stmt = select(Title).where(
             Title.external_id == data.external_id,
             Title.category == category,
@@ -53,7 +206,6 @@ class UserTitlesController(Controller):
         title = result.scalar_one_or_none()
 
         if not title:
-            # Create new title
             title = Title(
                 name=data.name,
                 category=category,
@@ -61,15 +213,14 @@ class UserTitlesController(Controller):
                 cover_image=data.cover_url,
                 release_year=data.release_year,
                 description=None,
-                genres=data.genres
+                genres=data.genres,
             )
             db_session.add(title)
             await db_session.flush()
 
-        # 2. Check if UserTitle exists
         stmt = select(UserTitle).where(
             UserTitle.user_id == user_id,
-            UserTitle.title_id == title.id
+            UserTitle.title_id == title.id,
         )
         result = await db_session.execute(stmt)
         user_title = result.scalar_one_or_none()
@@ -81,31 +232,36 @@ class UserTitlesController(Controller):
             and data.status == UserTitleStatus.COMPLETED
             and data.is_completed_100_percent
         )
-        game_platform = (
-            data.game_platform
-            if data.type == "game"
-            else None
-        )
+        game_platform = data.game_platform if data.type == "game" else None
+
+        # Explicit score from client marks series score as manual unless told otherwise
+        score_is_manual = data.score_is_manual
+        if score_is_manual is None and data.score is not None:
+            score_is_manual = True
+        if score_is_manual is None:
+            score_is_manual = False
 
         if user_title:
             previous_status = user_title.status
             should_increment = (
-                data.status == UserTitleStatus.COMPLETED
-                and data.increment_completion
+                data.status == UserTitleStatus.COMPLETED and data.increment_completion
             )
 
-            # Track meaningful changes before updating
-            if (user_title.status != data.status
+            if (
+                user_title.status != data.status
                 or user_title.score != data.score
                 or user_title.review_text != data.review_text
                 or user_title.is_completed_100_percent != is_completed_100_percent
                 or user_title.game_platform != game_platform
-                or should_increment):
+                or should_increment
+            ):
                 has_meaningful_change = True
 
-            # Update existing
             user_title.status = data.status
             user_title.score = data.score
+            user_title.score_is_manual = bool(score_is_manual) if data.score is not None else False
+            if data.score is None:
+                user_title.score_is_manual = False
             user_title.review_text = data.review_text
             user_title.is_spoiler = data.is_spoiler
             user_title.is_completed_100_percent = is_completed_100_percent
@@ -127,7 +283,6 @@ class UserTitlesController(Controller):
             elif data.status != UserTitleStatus.COMPLETED:
                 user_title.finished_at = None
         else:
-            # Create new link
             finished_at = data.finished_at
             if finished_at:
                 finished_at = finished_at.replace(tzinfo=None)
@@ -142,6 +297,7 @@ class UserTitlesController(Controller):
                 title_id=title.id,
                 status=data.status,
                 score=data.score,
+                score_is_manual=bool(score_is_manual) if data.score is not None else False,
                 review_text=data.review_text,
                 is_spoiler=data.is_spoiler,
                 finished_at=finished_at,
@@ -153,10 +309,14 @@ class UserTitlesController(Controller):
 
         await db_session.flush()
 
-        # 3. Create notifications for followers
+        if category == TitleCategory.SERIES:
+            await sync_full_structure(db_session, user_title, load_all_episodes=False)
+
         should_notify = is_new or has_meaningful_change
         if should_notify:
-            notif_type = NotificationType.NEW_TITLE if is_new else NotificationType.TITLE_UPDATED
+            notif_type = (
+                NotificationType.NEW_TITLE if is_new else NotificationType.TITLE_UPDATED
+            )
 
             follower_stmt = select(subscriptions_table.c.follower_id).where(
                 subscriptions_table.c.following_id == user_id
@@ -179,22 +339,7 @@ class UserTitlesController(Controller):
         await db_session.commit()
         await db_session.refresh(user_title)
 
-        return UserTitleRead(
-            id=user_title.id,
-            user_id=user_title.user_id,
-            title_id=user_title.title_id,
-            status=user_title.status,
-            score=user_title.score,
-            is_spoiler=user_title.is_spoiler,
-            finished_at=user_title.finished_at,
-            times_completed=user_title.times_completed,
-            is_completed_100_percent=user_title.is_completed_100_percent,
-            game_platform=user_title.game_platform,
-            screenshots=[
-                ScreenshotRead.model_validate(s)
-                for s in user_title.screenshots
-            ],
-        )
+        return _to_user_title_read(user_title)
 
     @delete("/{user_title_id:int}", status_code=204)
     async def delete_user_title(
@@ -214,3 +359,243 @@ class UserTitlesController(Controller):
         await db_session.delete(user_title)
         await db_session.commit()
 
+    async def _read_structure(
+        self,
+        db_session: AsyncSession,
+        user_title: UserTitle,
+        *,
+        sync_seasons: bool = False,
+    ) -> SeriesStructureRead:
+        if sync_seasons:
+            await sync_seasons_from_tmdb(db_session, user_title.title)
+            await db_session.flush()
+
+        seasons_stmt = (
+            select(TitleSeason)
+            .options(selectinload(TitleSeason.episodes))
+            .where(TitleSeason.title_id == user_title.title_id)
+            .order_by(TitleSeason.season_number)
+        )
+        seasons_result = await db_session.execute(seasons_stmt)
+        catalog_seasons = list(seasons_result.scalars().unique().all())
+
+        if not catalog_seasons and not sync_seasons:
+            await sync_seasons_from_tmdb(db_session, user_title.title)
+            await db_session.flush()
+            seasons_result = await db_session.execute(seasons_stmt)
+            catalog_seasons = list(seasons_result.scalars().unique().all())
+
+        user_seasons_stmt = (
+            select(UserTitleSeason)
+            .options(
+                selectinload(UserTitleSeason.episodes).selectinload(
+                    UserTitleEpisode.title_episode
+                )
+            )
+            .where(UserTitleSeason.user_title_id == user_title.id)
+        )
+        user_seasons_result = await db_session.execute(user_seasons_stmt)
+        user_seasons = list(user_seasons_result.scalars().unique().all())
+        user_seasons_by_catalog_id = {us.title_season_id: us for us in user_seasons}
+
+        await db_session.refresh(user_title)
+        return build_structure_response(
+            user_title, catalog_seasons, user_seasons_by_catalog_id
+        )
+
+    @get("/{user_title_id:int}/structure")
+    async def get_structure(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        db_session: AsyncSession,
+    ) -> SeriesStructureRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.SERIES:
+            raise HTTPException(detail="Not a series", status_code=400)
+
+        structure = await self._read_structure(db_session, user_title)
+        await db_session.commit()
+        return structure
+
+    @post("/{user_title_id:int}/sync-structure")
+    async def sync_structure(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        db_session: AsyncSession,
+    ) -> SeriesStructureRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.SERIES:
+            raise HTTPException(detail="Not a series", status_code=400)
+
+        await sync_full_structure(db_session, user_title, load_all_episodes=False)
+        structure = await self._read_structure(
+            db_session, user_title, sync_seasons=False
+        )
+        await db_session.commit()
+        return structure
+
+    @post("/{user_title_id:int}/seasons/{season_number:int}/sync-episodes")
+    async def sync_season_episodes(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        season_number: int,
+        db_session: AsyncSession,
+    ) -> SeasonStructureRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.SERIES:
+            raise HTTPException(detail="Not a series", status_code=400)
+
+        _user_season, title_season = await _get_or_create_user_season(
+            db_session, user_title, season_number
+        )
+        await sync_season_episodes_from_tmdb(
+            db_session, user_title.title, title_season
+        )
+        structure = await self._read_structure(db_session, user_title)
+        await db_session.commit()
+        for season in structure.seasons:
+            if season.season_number == season_number:
+                return season
+        raise NotFoundException(detail="Season not found")
+
+    @put("/{user_title_id:int}/seasons/{season_number:int}")
+    async def update_season(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        season_number: int,
+        data: UpdateSeasonRequest,
+        db_session: AsyncSession,
+    ) -> SeriesStructureRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.SERIES:
+            raise HTTPException(detail="Not a series", status_code=400)
+
+        user_season, _title_season = await _get_or_create_user_season(
+            db_session, user_title, season_number
+        )
+
+        if data.status is not None:
+            user_season.status = data.status
+
+        if data.clear_score:
+            user_season.score = None
+            user_season.score_is_manual = False
+        elif data.score is not None:
+            user_season.score = data.score
+            user_season.score_is_manual = True
+
+        if data.review_text is not None:
+            user_season.review_text = data.review_text
+            user_season.is_spoiler = (
+                data.is_spoiler
+                if data.is_spoiler is not None
+                else _spoiler_from_text(data.review_text)
+            )
+        elif data.is_spoiler is not None:
+            user_season.is_spoiler = data.is_spoiler
+
+        await db_session.flush()
+        await cascade_after_season_change(db_session, user_season)
+        structure = await self._read_structure(db_session, user_title)
+        await db_session.commit()
+        return structure
+
+    @put("/{user_title_id:int}/seasons/{season_number:int}/episodes/{episode_number:int}")
+    async def update_episode(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        season_number: int,
+        episode_number: int,
+        data: UpdateEpisodeRequest,
+        db_session: AsyncSession,
+    ) -> SeriesStructureRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.SERIES:
+            raise HTTPException(detail="Not a series", status_code=400)
+
+        user_season, title_season = await _get_or_create_user_season(
+            db_session, user_title, season_number
+        )
+        user_episode = await _get_or_create_user_episode(
+            db_session, user_title, user_season, title_season, episode_number
+        )
+
+        if data.status is not None:
+            user_episode.status = data.status
+
+        if data.clear_score:
+            user_episode.score = None
+        elif data.score is not None:
+            user_episode.score = data.score
+
+        await db_session.flush()
+        await cascade_after_episode_change(db_session, user_season)
+        structure = await self._read_structure(db_session, user_title)
+        await db_session.commit()
+        return structure
+
+    @post("/{user_title_id:int}/reset-score")
+    async def reset_series_score(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        db_session: AsyncSession,
+    ) -> SeriesStructureRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        await reset_series_score_to_avg(db_session, user_title)
+
+        if user_title.title.category == TitleCategory.SERIES:
+            structure = await self._read_structure(db_session, user_title)
+            await db_session.commit()
+            return structure
+
+        await db_session.commit()
+        return SeriesStructureRead(
+            user_title_id=user_title.id,
+            title_id=user_title.title_id,
+            score=user_title.score,
+            avg_score=user_title.avg_score,
+            score_is_manual=user_title.score_is_manual,
+            status=user_title.status,
+            review_text=user_title.review_text,
+            seasons=[],
+        )
+
+    @post("/{user_title_id:int}/seasons/{season_number:int}/reset-score")
+    async def reset_season_score(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        season_number: int,
+        db_session: AsyncSession,
+    ) -> SeriesStructureRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.SERIES:
+            raise HTTPException(detail="Not a series", status_code=400)
+
+        user_season, _title_season = await _get_or_create_user_season(
+            db_session, user_title, season_number
+        )
+        await reset_season_score_to_avg(db_session, user_season)
+        structure = await self._read_structure(db_session, user_title)
+        await db_session.commit()
+        return structure

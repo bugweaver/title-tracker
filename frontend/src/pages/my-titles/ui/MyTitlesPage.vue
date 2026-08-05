@@ -62,6 +62,8 @@ const selectedInitialData = ref<{
   userTitleId?: number;
   status: UserTitleStatus;
   score: number | null;
+  avg_score?: number | null;
+  score_is_manual?: boolean;
   review_text: string | null;
   is_spoiler?: boolean;
   finished_at?: string | null;
@@ -70,22 +72,23 @@ const selectedInitialData = ref<{
   screenshots?: { id: number; url: string; position: number }[];
 } | null>(null);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const handleEditTitle = (userTitle: any) => {
+const handleEditTitle = (userTitle: UserTitle) => {
   // Map UserTitle to TitleSearchResult
   selectedTitle.value = {
     external_id: userTitle.title.external_id || String(userTitle.title_id), // Fallback if no ext ID
     type: userTitle.title.category,
     title: userTitle.title.name,
-    poster_url: userTitle.title.cover_image,
-    release_year: userTitle.title.release_year,
-    genres: userTitle.title.genres,
+    poster_url: userTitle.title.cover_image ?? undefined,
+    release_year: userTitle.title.release_year ?? undefined,
+    genres: userTitle.title.genres || [],
   };
   
   selectedInitialData.value = {
     userTitleId: userTitle.id,
     status: userTitle.status,
     score: userTitle.score,
+    avg_score: userTitle.avg_score,
+    score_is_manual: userTitle.score_is_manual,
     review_text: userTitle.review_text,
     is_spoiler: userTitle.is_spoiler,
     finished_at: userTitle.finished_at,
