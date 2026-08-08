@@ -12,6 +12,11 @@ from core.redis.client import redis_client
 from src.auth.schemas import UserRegister, UserLogin, TokenInfo
 
 
+def _session_redis_key(user_id: int, jti: str) -> str:
+    """Per-device refresh session key (supports multiple concurrent logins)."""
+    return f"refresh_token:{user_id}:{jti}"
+
+
 class AuthService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -68,6 +73,7 @@ class AuthService:
 
             sub = payload.get("sub")
             token_type = payload.get("type")
+            jti = payload.get("jti")
             
             if sub is None:
                 raise NotAuthorizedException(detail="Некорректный токен")
@@ -76,6 +82,9 @@ class AuthService:
             if token_type != "refresh":
                 raise NotAuthorizedException(detail="Неверный тип токена")
 
+            if not jti:
+                raise NotAuthorizedException(detail="Некорректный токен")
+
             user_id = int(sub)
 
         except JWTError:
@@ -83,21 +92,41 @@ class AuthService:
         except ValueError:
             raise NotAuthorizedException(detail="Некорректный формат токена")
 
-        # 2. Verify token exists in Redis (strict session check)
-        redis_key = f"refresh_token:{user_id}"
-        stored_token = await redis_client.get(redis_key)
-
-        if not stored_token or stored_token != refresh_token:
+        # 2. Verify this device session exists in Redis
+        redis_key = _session_redis_key(user_id, jti)
+        if not await redis_client.exists(redis_key):
             raise NotAuthorizedException(detail="Сессия истекла или отозвана")
 
+        # Rotate: revoke the used refresh token, then issue a new session
+        await redis_client.delete(redis_key)
         return await self._create_tokens(user_id)
 
-    async def logout_user(self, user_id: int) -> None:
-        """Logout user by removing their refresh token from Redis."""
-        await redis_client.delete(f"refresh_token:{user_id}")
+    async def logout_user(self, user_id: int, refresh_token: str | None = None) -> None:
+        """Logout only the current device session (identified by refresh cookie)."""
+        if not refresh_token:
+            return
+
+        try:
+            payload = jwt.decode(
+                refresh_token,
+                settings.auth.JWT_SECRET,
+                algorithms=[settings.auth.ALGORITHM],
+            )
+            if payload.get("type") != "refresh":
+                return
+
+            sub = payload.get("sub")
+            jti = payload.get("jti")
+            if not sub or not jti or int(sub) != user_id:
+                return
+
+            await redis_client.delete(_session_redis_key(user_id, jti))
+        except (JWTError, ValueError):
+            # Cookie already invalid/expired — nothing to revoke
+            return
 
     async def _create_tokens(self, user_id: int) -> TokenInfo:
-        """Create new access and refresh token pair."""
+        """Create new access and refresh token pair for a new device session."""
         now = datetime.now(timezone.utc)
 
         # Access Token (short-lived)
@@ -124,10 +153,10 @@ class AuthService:
             refresh_payload, settings.auth.JWT_SECRET, algorithm=settings.auth.ALGORITHM
         )
 
-        # Store refresh token in Redis
+        # Store this session in Redis (does not invalidate other devices)
         await redis_client.set(
-            f"refresh_token:{user_id}",
-            refresh_token,
+            _session_redis_key(user_id, refresh_jti),
+            "1",
             ex=timedelta(days=settings.auth.REFRESH_TOKEN_EXPIRE_DAYS),
         )
 

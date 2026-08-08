@@ -98,7 +98,8 @@ class AuthController(Controller):
     async def logout(
         self, request: Request[User, Token, Any], auth_service: AuthService
     ) -> Response[None]:
-        await auth_service.logout_user(request.user.id)
+        refresh_token = request.cookies.get(settings.auth.REFRESH_TOKEN_COOKIE_NAME)
+        await auth_service.logout_user(request.user.id, refresh_token)
         
         response = Response(content=None, status_code=204)
         clear_refresh_cookie(response)
