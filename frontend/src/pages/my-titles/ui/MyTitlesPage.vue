@@ -438,7 +438,7 @@ const activeSearchCategory = computed(() => {
       </div>
 
       <LibraryFiltersBar
-        :filters="libraryFilters"
+        v-model:filters="libraryFilters"
         :genres="availableGenres"
         :release-years="availableReleaseYears"
         :show-platform="showPlatformFilter"

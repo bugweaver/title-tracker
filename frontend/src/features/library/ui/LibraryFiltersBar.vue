@@ -9,8 +9,9 @@ import {
 } from '../composables/useLibraryFilters';
 import { GamePlatform } from '@/entities/title';
 
+const filters = defineModel<LibraryFilterState>('filters', { required: true });
+
 const props = defineProps<{
-  filters: LibraryFilterState;
   genres: string[];
   releaseYears: number[];
   showPlatform?: boolean;

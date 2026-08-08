@@ -6,6 +6,7 @@ import {
   type CompareBucket,
   type LibraryCompareResponse,
 } from '@/shared/api/social';
+import type { ApiError } from '@/shared/api';
 import { getTitleStatusLabel, type TitleCategory } from '@/entities/title';
 
 const route = useRoute();
@@ -42,8 +43,9 @@ const load = async () => {
   error.value = '';
   try {
     data.value = await socialApi.compareLibraries(userId.value, bucket.value);
-  } catch (e: any) {
-    error.value = e?.detail || 'Не удалось сравнить библиотеки';
+  } catch (e) {
+    const apiError = e as ApiError;
+    error.value = apiError.detail || 'Не удалось сравнить библиотеки';
     data.value = null;
   } finally {
     loading.value = false;
