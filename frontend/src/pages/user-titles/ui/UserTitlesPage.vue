@@ -17,6 +17,8 @@ import UserGameCard from '@/features/games/ui/UserGameCard.vue';
 import AppSelect from '@/shared/ui/AppSelect.vue';
 import { usersApi, type UserProfile, type ApiError } from '@/shared/api';
 import { useUserStore } from '@/entities/user';
+import LibraryFiltersBar from '@/features/library/ui/LibraryFiltersBar.vue';
+import { useLibraryFilters } from '@/features/library/composables/useLibraryFilters';
 
 const route = useRoute();
 const userStore = useUserStore();
@@ -34,6 +36,19 @@ const activeMonth = ref<number | null>(null);
 
 const activeTab = computed(() => getTitleCategoryFromRouteSegment(route.params.category));
 const activeStatus = computed(() => getTitleStatusFromRouteSegment(route.params.status, activeTab.value));
+
+const categoryTitles = computed(() =>
+  titles.value.filter((title) => title.title.category === activeTab.value),
+);
+const {
+  filters: libraryFilters,
+  availableGenres,
+  availableReleaseYears,
+  showPlatformFilter,
+  hasActiveFilters,
+  resetFilters,
+  apply: applyLibraryFilters,
+} = useLibraryFilters(categoryTitles, activeTab);
 
 const getTabRoute = (category: TitleCategory) => ({
   name: 'user-profile',
@@ -168,7 +183,9 @@ const filterByFinishedPeriod = (sourceTitles: UserTitle[]) => {
 };
 
 const getCountByStatus = (status: UserTitleStatus | 'all', category: TitleCategory) => {
-      return filterByFinishedPeriod(getTitlesByStatus(status, category)).length;
+      return applyLibraryFilters(
+        filterByFinishedPeriod(getTitlesByStatus(status, category)),
+      ).length;
 };
 
 const currentStatuses = computed(() => {
@@ -219,9 +236,11 @@ const monthOptions = computed(() => [
 
 const displayedTitles = computed(() => {
     // Create a copy to avoid mutating the source
-    const filtered = filterByFinishedPeriod([
+    const filtered = applyLibraryFilters(
+      filterByFinishedPeriod([
         ...getTitlesByStatus(activeStatus.value, activeTab.value),
-    ]);
+      ]),
+    );
     
     
     // Sort by "Smart Date" (finished_at OR updated_at) desc, then by ID desc
@@ -353,6 +372,15 @@ watch(activeTab, () => {
            class="min-w-0 sm:w-48"
          />
       </div>
+
+      <LibraryFiltersBar
+        :filters="libraryFilters"
+        :genres="availableGenres"
+        :release-years="availableReleaseYears"
+        :show-platform="showPlatformFilter"
+        :has-active-filters="hasActiveFilters"
+        @reset="resetFilters"
+      />
     </div>
 
     <template v-if="!isLibraryPrivate">
@@ -373,7 +401,9 @@ watch(activeTab, () => {
           py-12 px-4 sm:py-16 sm:px-8 bg-background-soft rounded-lg
           border border-border text-center
         ">
-        <p class="text-xl text-text mb-2">Список тайтлов пуст</p>
+        <p class="text-xl text-text mb-2">
+          {{ hasActiveFilters ? 'Ничего не найдено' : 'Список тайтлов пуст' }}
+        </p>
       </div>
     </template>
   </div>

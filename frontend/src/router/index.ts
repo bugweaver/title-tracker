@@ -32,6 +32,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/stats',
+      name: 'stats',
+      component: () => import('@/pages/stats').then(m => m.StatsPage),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/community',
       name: 'community',
       component: () => import('@/pages/community').then(m => m.CommunityPage),

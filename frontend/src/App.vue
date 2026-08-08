@@ -317,6 +317,9 @@ async function handleLogout() {
             <RouterLink to="/my-titles" class="flex min-h-11 items-center rounded-lg px-4 text-text transition-colors hover:bg-primary-500/10" active-class="bg-primary-500/10 text-primary-500">
               Мои тайтлы
             </RouterLink>
+            <RouterLink to="/stats" class="flex min-h-11 items-center rounded-lg px-4 text-text transition-colors hover:bg-primary-500/10" active-class="bg-primary-500/10 text-primary-500">
+              Статистика
+            </RouterLink>
             <RouterLink to="/community" class="flex min-h-11 items-center rounded-lg px-4 text-text transition-colors hover:bg-primary-500/10" active-class="bg-primary-500/10 text-primary-500">
               Сообщество
             </RouterLink>
@@ -413,6 +416,13 @@ async function handleLogout() {
         >
           Мои тайтлы
           </RouterLink>
+        <RouterLink
+          to="/stats"
+          :class="navLinkClass"
+          active-class="text-primary-500"
+        >
+          Статистика
+        </RouterLink>
         <RouterLink
           to="/community"
           :class="navLinkClass"

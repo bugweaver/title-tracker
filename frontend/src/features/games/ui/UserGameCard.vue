@@ -4,21 +4,39 @@ import { useRouter } from 'vue-router';
 import {
   type UserTitle,
   TitleCategory,
+  UserTitleStatus,
   getTitleStatusLabel,
   getTimesCompletedLabel,
 } from '@/entities/title';
 import GamePlatformBadge from './GamePlatformBadge.vue';
+import QuickStatusMenu from './QuickStatusMenu.vue';
 
 const props = withDefaults(defineProps<{
   userTitle: UserTitle;
   editable?: boolean;
+  statusUpdating?: boolean;
 }>(), {
-  editable: false
+  editable: false,
+  statusUpdating: false,
 });
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'edit', userTitle: UserTitle): void;
+  (e: 'status-change', userTitle: UserTitle, status: UserTitleStatus): void;
 }>();
+
+const isStatusMenuOpen = ref(false);
+
+const toggleStatusMenu = () => {
+  if (!props.editable || props.statusUpdating) return;
+  isStatusMenuOpen.value = !isStatusMenuOpen.value;
+};
+
+const handleStatusSelect = (status: UserTitleStatus) => {
+  isStatusMenuOpen.value = false;
+  if (status === props.userTitle.status) return;
+  emit('status-change', props.userTitle, status);
+};
 
 const score = computed(() => {
   if (props.userTitle.score === null) return null;
@@ -215,12 +233,28 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
           ★ {{ score }}
         </span>
         
-        <span 
-          class="text-xs px-2.5 py-1 rounded-full font-medium"
-          :class="statusColorClass"
-        >
-          {{ statusLabel }}
-        </span>
+        <div class="relative" @click.stop>
+          <button
+            type="button"
+            class="text-xs px-2.5 py-1 rounded-full font-medium transition-opacity"
+            :class="[
+              statusColorClass,
+              editable ? 'cursor-pointer hover:opacity-90' : 'cursor-default',
+              statusUpdating ? 'opacity-60' : '',
+            ]"
+            :disabled="!editable || statusUpdating"
+            :title="editable ? 'Сменить статус' : undefined"
+            @click="toggleStatusMenu"
+          >
+            {{ statusLabel }}
+          </button>
+          <QuickStatusMenu
+            :user-title="userTitle"
+            :open="isStatusMenuOpen"
+            @close="isStatusMenuOpen = false"
+            @select="handleStatusSelect"
+          />
+        </div>
 
         <span
           v-if="isCompleted100PercentGame"

@@ -1,7 +1,7 @@
 from typing import Any
 from datetime import datetime
 
-from litestar import Controller, post, delete, get, put, Request
+from litestar import Controller, post, delete, get, put, patch, Request
 from litestar.di import Provide
 from litestar.exceptions import HTTPException, NotFoundException
 from sqlalchemy import select
@@ -25,6 +25,8 @@ from core.models.db_helper import get_db_session
 from screenshots.schemas import ScreenshotRead
 from .schemas import (
     AddUserTitleRequest,
+    UpdateUserTitleStatusRequest,
+    UserTitleStatusUpdateRead,
     UserTitleRead,
     UpdateSeasonRequest,
     UpdateEpisodeRequest,
@@ -347,6 +349,71 @@ class UserTitlesController(Controller):
         await db_session.refresh(user_title)
 
         return _to_user_title_read(user_title)
+
+    @patch("/{user_title_id:int}/status")
+    async def update_user_title_status(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        data: UpdateUserTitleStatusRequest,
+        db_session: AsyncSession,
+    ) -> UserTitleStatusUpdateRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        previous_status = user_title.status
+
+        if previous_status == data.status:
+            return UserTitleStatusUpdateRead(
+                id=user_title.id,
+                status=user_title.status,
+                finished_at=user_title.finished_at,
+                times_completed=user_title.times_completed,
+                updated_at=user_title.updated_at,
+            )
+
+        user_title.status = data.status
+
+        if data.status == UserTitleStatus.COMPLETED:
+            if not user_title.finished_at:
+                user_title.finished_at = datetime.now()
+            if (
+                previous_status != UserTitleStatus.COMPLETED
+                and user_title.times_completed == 0
+            ):
+                user_title.times_completed = 1
+        else:
+            user_title.finished_at = None
+
+        follower_stmt = select(subscriptions_table.c.follower_id).where(
+            subscriptions_table.c.following_id == request.user.id
+        )
+        follower_result = await db_session.execute(follower_stmt)
+        follower_ids = [row[0] for row in follower_result.fetchall()]
+
+        if follower_ids:
+            db_session.add_all(
+                [
+                    Notification(
+                        recipient_id=follower_id,
+                        actor_id=request.user.id,
+                        user_title_id=user_title.id,
+                        type=NotificationType.TITLE_UPDATED,
+                    )
+                    for follower_id in follower_ids
+                ]
+            )
+
+        await db_session.commit()
+        await db_session.refresh(user_title)
+
+        return UserTitleStatusUpdateRead(
+            id=user_title.id,
+            status=user_title.status,
+            finished_at=user_title.finished_at,
+            times_completed=user_title.times_completed,
+            updated_at=user_title.updated_at,
+        )
 
     @delete("/{user_title_id:int}", status_code=204)
     async def delete_user_title(

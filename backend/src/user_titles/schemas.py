@@ -28,6 +28,18 @@ class AddUserTitleRequest(BaseModel):
     increment_completion: bool = False
 
 
+class UpdateUserTitleStatusRequest(BaseModel):
+    status: UserTitleStatus
+
+
+class UserTitleStatusUpdateRead(BaseModel):
+    id: int
+    status: UserTitleStatus
+    finished_at: datetime | None
+    times_completed: int
+    updated_at: datetime
+
+
 class UserTitleRead(BaseModel):
     id: int
     user_id: int

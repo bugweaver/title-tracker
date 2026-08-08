@@ -29,6 +29,22 @@ export const useTitleStore = defineStore('title', () => {
     titles.value = titles.value.filter(t => t.id !== userTitleId);
   };
 
+  const updateTitleStatus = async (userTitleId: number, status: UserTitleStatus) => {
+    const result = await titlesApi.updateStatus(userTitleId, status);
+    const index = titles.value.findIndex((title) => title.id === userTitleId);
+    if (index !== -1) {
+      const current = titles.value[index]!;
+      titles.value[index] = {
+        ...current,
+        status: result.status,
+        finished_at: result.finished_at ?? undefined,
+        times_completed: result.times_completed,
+        updated_at: result.updated_at,
+      };
+    }
+    return result;
+  };
+
   const getTitlesByCategory = (category: TitleCategory) => {
     return titles.value.filter((t) => t.title.category === category);
   };
@@ -67,6 +83,7 @@ export const useTitleStore = defineStore('title', () => {
     error,
     fetchMyTitles,
     deleteTitle,
+    updateTitleStatus,
     getTitlesByCategory,
     getTitlesByStatus,
     getCountByStatus

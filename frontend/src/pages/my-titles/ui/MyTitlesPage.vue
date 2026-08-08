@@ -21,6 +21,8 @@ import GameSearchModal from '@/features/games/ui/GameSearchModal.vue';
 import GameReviewModal from '@/features/games/ui/GameReviewModal.vue';
 import UserGameCard from '@/features/games/ui/UserGameCard.vue';
 import AvatarCropModal from '@/features/user/ui/AvatarCropModal.vue';
+import LibraryFiltersBar from '@/features/library/ui/LibraryFiltersBar.vue';
+import { useLibraryFilters } from '@/features/library/composables/useLibraryFilters';
 
 
 const userStore = useUserStore();
@@ -31,9 +33,23 @@ const isSearchModalOpen = ref(false);
 const isReviewModalOpen = ref(false);
 const selectedTitle = ref<TitleSearchResult | null>(null);
 const userProfile = ref<UserProfile | null>(null);
+const statusUpdatingId = ref<number | null>(null);
 
 const activeTab = computed(() => getTitleCategoryFromRouteSegment(route.params.category));
 const activeStatus = computed(() => getTitleStatusFromRouteSegment(route.params.status, activeTab.value));
+
+const categoryTitles = computed(() =>
+  titleStore.getTitlesByStatus('all', activeTab.value),
+);
+const {
+  filters: libraryFilters,
+  availableGenres,
+  availableReleaseYears,
+  showPlatformFilter,
+  hasActiveFilters,
+  resetFilters,
+  apply: applyLibraryFilters,
+} = useLibraryFilters(categoryTitles, activeTab);
 
 const getTabRoute = (category: TitleCategory) => ({
   name: 'my-titles',
@@ -102,6 +118,18 @@ const handleEditTitle = (userTitle: UserTitle) => {
 
 const handleTitleAdded = () => {
   titleStore.fetchMyTitles(); // Refresh list
+};
+
+const handleStatusChange = async (userTitle: UserTitle, status: UserTitleStatus) => {
+  if (statusUpdatingId.value === userTitle.id) return;
+  statusUpdatingId.value = userTitle.id;
+  try {
+    await titleStore.updateTitleStatus(userTitle.id, status);
+  } catch (e) {
+    console.error('Failed to update status', e);
+  } finally {
+    statusUpdatingId.value = null;
+  }
 };
 
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -186,16 +214,20 @@ const currentStatuses = computed(() => {
   return getAvailableTitleStatuses(category).map(status => ({
     id: status,
     label: getTitleStatusLabel(status, category),
-    count: filterByFinishedPeriod(titleStore.getTitlesByStatus(status, category)).length
+    count: applyLibraryFilters(
+      filterByFinishedPeriod(titleStore.getTitlesByStatus(status, category)),
+    ).length,
   }));
 });
 
 // Filtered list of titles to display
 const displayedTitles = computed(() => {
     // Create a copy to avoid mutating the store
-    const titles = filterByFinishedPeriod([
+    const titles = applyLibraryFilters(
+      filterByFinishedPeriod([
         ...titleStore.getTitlesByStatus(activeStatus.value, activeTab.value),
-    ]);
+      ]),
+    );
     
     
     // Sort by "Smart Date" (finished_at OR updated_at) desc, then by ID desc
@@ -403,6 +435,15 @@ const activeSearchCategory = computed(() => {
         </div>
       </div>
 
+      <LibraryFiltersBar
+        :filters="libraryFilters"
+        :genres="availableGenres"
+        :release-years="availableReleaseYears"
+        :show-platform="showPlatformFilter"
+        :has-active-filters="hasActiveFilters"
+        @reset="resetFilters"
+      />
+
       <div class="flex">
         <button
           class="min-h-11 w-full cursor-pointer rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:w-auto"
@@ -423,7 +464,9 @@ const activeSearchCategory = computed(() => {
         :key="userTitle.id"
         :user-title="userTitle"
         :editable="true"
+        :status-updating="statusUpdatingId === userTitle.id"
         @edit="handleEditTitle"
+        @status-change="handleStatusChange"
       />
     </div>
 
@@ -432,8 +475,12 @@ const activeSearchCategory = computed(() => {
         py-12 px-4 sm:py-16 sm:px-8 bg-background-soft rounded-lg
         border border-border text-center
       ">
-      <p class="text-xl text-text mb-2">Список тайтлов пуст</p>
-      <p class="text-base text-text opacity-70">Здесь будут отображаться ваши тайтлы</p>
+      <p class="text-xl text-text mb-2">
+        {{ hasActiveFilters ? 'Ничего не найдено' : 'Список тайтлов пуст' }}
+      </p>
+      <p class="text-base text-text opacity-70">
+        {{ hasActiveFilters ? 'Попробуйте изменить фильтры или поисковый запрос' : 'Здесь будут отображаться ваши тайтлы' }}
+      </p>
     </div>
   </div>
   <GameSearchModal 

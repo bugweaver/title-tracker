@@ -99,6 +99,15 @@ export const titlesApi = {
   deleteUserTitle: (userTitleId: number) =>
     apiClient.delete(`/user-titles/${userTitleId}`),
 
+  updateStatus: (userTitleId: number, status: UserTitleStatus) =>
+    apiClient.patch<{
+      id: number;
+      status: UserTitleStatus;
+      finished_at: string | null;
+      times_completed: number;
+      updated_at: string;
+    }>(`/user-titles/${userTitleId}/status`, { status }),
+
   recordView: (userTitleId: number) =>
     apiClient.post<{ recorded: boolean }>(`/titles/entry/${userTitleId}/view`),
 
