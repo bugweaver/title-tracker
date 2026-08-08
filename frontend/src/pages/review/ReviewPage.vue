@@ -9,6 +9,7 @@ import { usersApi, type User } from '@/shared/api';
 import { titlesApi } from '@/shared/api/titles';
 import GamePlatformBadge from '@/features/games/ui/GamePlatformBadge.vue';
 import SeriesSeasonsEditor from '@/features/games/ui/SeriesSeasonsEditor.vue';
+import GameDlcsEditor from '@/features/games/ui/GameDlcsEditor.vue';
 
 interface ParsedSegment {
   id: number;
@@ -330,6 +331,16 @@ const formatDate = (dateStr: string | null | undefined) => {
           class="review-text-section review-accent-card"
         >
           <SeriesSeasonsEditor
+            :user-title-id="entry.id"
+            readonly
+          />
+        </div>
+
+        <div
+          v-if="entry.title.category === 'game'"
+          class="review-text-section review-accent-card"
+        >
+          <GameDlcsEditor
             :user-title-id="entry.id"
             readonly
           />

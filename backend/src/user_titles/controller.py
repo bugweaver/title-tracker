@@ -28,8 +28,10 @@ from .schemas import (
     UserTitleRead,
     UpdateSeasonRequest,
     UpdateEpisodeRequest,
+    UpdateDlcRequest,
     SeriesStructureRead,
     SeasonStructureRead,
+    GameDlcsRead,
 )
 from .score_cascade import (
     cascade_after_episode_change,
@@ -44,6 +46,8 @@ from .structure_sync import (
     sync_full_structure,
 )
 from .structure_read import build_structure_response
+from .dlc_sync import sync_dlcs_from_igdb
+from .dlc_read import build_game_dlcs_response
 
 
 def _spoiler_from_text(text: str | None) -> bool:
@@ -312,6 +316,8 @@ class UserTitlesController(Controller):
 
         if supports_structure(category):
             await sync_full_structure(db_session, user_title, load_all_episodes=False)
+        elif category == TitleCategory.GAME and not title.parent_title_id:
+            await sync_dlcs_from_igdb(db_session, title)
 
         should_notify = is_new or has_meaningful_change
         if should_notify:
@@ -416,6 +422,164 @@ class UserTitlesController(Controller):
         return build_structure_response(
             user_title, catalog_seasons, user_seasons_by_catalog_id
         )
+
+    @get("/{user_title_id:int}/dlcs")
+    async def get_dlcs(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        db_session: AsyncSession,
+    ) -> GameDlcsRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.GAME:
+            raise HTTPException(detail="Not a game", status_code=400)
+        if user_title.title.parent_title_id is not None:
+            raise HTTPException(detail="DLC has no nested DLC list", status_code=400)
+
+        response = await build_game_dlcs_response(db_session, user_title, sync=True)
+        await db_session.commit()
+        return response
+
+    @post("/{user_title_id:int}/sync-dlcs")
+    async def sync_dlcs(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        db_session: AsyncSession,
+    ) -> GameDlcsRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.GAME:
+            raise HTTPException(detail="Not a game", status_code=400)
+        if user_title.title.parent_title_id is not None:
+            raise HTTPException(detail="DLC has no nested DLC list", status_code=400)
+
+        response = await build_game_dlcs_response(db_session, user_title, sync=True)
+        await db_session.commit()
+        return response
+
+    @put("/{user_title_id:int}/dlcs/{dlc_title_id:int}")
+    async def update_dlc(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        dlc_title_id: int,
+        data: UpdateDlcRequest,
+        db_session: AsyncSession,
+    ) -> GameDlcsRead:
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.GAME:
+            raise HTTPException(detail="Not a game", status_code=400)
+
+        dlc_title = await db_session.get(Title, dlc_title_id)
+        if (
+            not dlc_title
+            or dlc_title.category != TitleCategory.GAME
+            or dlc_title.parent_title_id != user_title.title_id
+        ):
+            raise NotFoundException(detail="DLC not found for this game")
+
+        dlc_user_stmt = select(UserTitle).where(
+            UserTitle.user_id == request.user.id,
+            UserTitle.title_id == dlc_title.id,
+        )
+        dlc_user_result = await db_session.execute(dlc_user_stmt)
+        dlc_user_title = dlc_user_result.scalar_one_or_none()
+
+        if not dlc_user_title:
+            status = data.status or UserTitleStatus.PLANNED
+            finished_at = datetime.now() if status == UserTitleStatus.COMPLETED else None
+            dlc_user_title = UserTitle(
+                user_id=request.user.id,
+                title_id=dlc_title.id,
+                status=status,
+                score=None if data.clear_score else data.score,
+                score_is_manual=bool(data.score) and not data.clear_score,
+                review_text=data.review_text,
+                is_spoiler=(
+                    data.is_spoiler
+                    if data.is_spoiler is not None
+                    else _spoiler_from_text(data.review_text)
+                ),
+                finished_at=finished_at,
+                times_completed=1 if status == UserTitleStatus.COMPLETED else 0,
+            )
+            db_session.add(dlc_user_title)
+        else:
+            if data.status is not None:
+                previous_status = dlc_user_title.status
+                dlc_user_title.status = data.status
+                if data.status == UserTitleStatus.COMPLETED:
+                    if not dlc_user_title.finished_at:
+                        dlc_user_title.finished_at = datetime.now()
+                    if (
+                        previous_status != UserTitleStatus.COMPLETED
+                        and dlc_user_title.times_completed == 0
+                    ):
+                        dlc_user_title.times_completed = 1
+                else:
+                    dlc_user_title.finished_at = None
+
+            if data.clear_score:
+                dlc_user_title.score = None
+                dlc_user_title.score_is_manual = False
+            elif data.score is not None:
+                dlc_user_title.score = data.score
+                dlc_user_title.score_is_manual = True
+
+            if data.review_text is not None:
+                dlc_user_title.review_text = data.review_text
+                dlc_user_title.is_spoiler = (
+                    data.is_spoiler
+                    if data.is_spoiler is not None
+                    else _spoiler_from_text(data.review_text)
+                )
+            elif data.is_spoiler is not None:
+                dlc_user_title.is_spoiler = data.is_spoiler
+
+        await db_session.flush()
+        response = await build_game_dlcs_response(db_session, user_title, sync=False)
+        await db_session.commit()
+        return response
+
+    @delete("/{user_title_id:int}/dlcs/{dlc_title_id:int}", status_code=204)
+    async def delete_dlc_tracking(
+        self,
+        request: Request[User, dict, Any],  # type: ignore
+        user_title_id: int,
+        dlc_title_id: int,
+        db_session: AsyncSession,
+    ) -> None:
+        """Remove user tracking for a DLC (catalog title stays linked to the game)."""
+        user_title = await _get_owned_user_title(
+            db_session, user_title_id, request.user.id
+        )
+        if user_title.title.category != TitleCategory.GAME:
+            raise HTTPException(detail="Not a game", status_code=400)
+
+        dlc_title = await db_session.get(Title, dlc_title_id)
+        if (
+            not dlc_title
+            or dlc_title.parent_title_id != user_title.title_id
+        ):
+            raise NotFoundException(detail="DLC not found for this game")
+
+        dlc_user_stmt = select(UserTitle).where(
+            UserTitle.user_id == request.user.id,
+            UserTitle.title_id == dlc_title.id,
+        )
+        dlc_user_result = await db_session.execute(dlc_user_stmt)
+        dlc_user_title = dlc_user_result.scalar_one_or_none()
+        if not dlc_user_title:
+            raise NotFoundException(detail="DLC tracking not found")
+
+        await db_session.delete(dlc_user_title)
+        await db_session.commit()
 
     @get("/{user_title_id:int}/structure")
     async def get_structure(

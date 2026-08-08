@@ -96,3 +96,32 @@ class SeriesStructureRead(BaseModel):
     status: UserTitleStatus
     review_text: str | None = None
     seasons: list[SeasonStructureRead] = []
+
+
+class UpdateDlcRequest(BaseModel):
+    status: UserTitleStatus | None = None
+    score: float | None = Field(None, ge=1, le=10)
+    clear_score: bool = False
+    review_text: str | None = None
+    is_spoiler: bool | None = None
+
+
+class DlcItemRead(BaseModel):
+    title_id: int
+    external_id: str | None = None
+    name: str
+    cover_image: str | None = None
+    release_year: int | None = None
+    user_title_id: int | None = None
+    status: UserTitleStatus | None = None
+    score: float | None = None
+    review_text: str | None = None
+    is_spoiler: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GameDlcsRead(BaseModel):
+    user_title_id: int
+    title_id: int
+    dlcs: list[DlcItemRead] = []

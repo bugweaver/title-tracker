@@ -39,6 +39,26 @@ export interface Title {
   description: string | null;
   release_year: number | null;
   genres: string[] | null;
+  parent_title_id?: number | null;
+}
+
+export interface DlcItem {
+  title_id: number;
+  external_id: string | null;
+  name: string;
+  cover_image: string | null;
+  release_year: number | null;
+  user_title_id: number | null;
+  status: UserTitleStatus | null;
+  score: number | null;
+  review_text: string | null;
+  is_spoiler: boolean;
+}
+
+export interface GameDlcs {
+  user_title_id: number;
+  title_id: number;
+  dlcs: DlcItem[];
 }
 
 export interface UserTitle {

@@ -93,7 +93,10 @@ class IGDBService(ContentProvider):
             "Client-ID": self.client_id,
             "Authorization": f"Bearer {token}",
         }
-        body = f'fields name, cover.url, first_release_date, genres.name; where id = {external_id};'
+        body = (
+            f"fields name, cover.url, first_release_date, genres.name, "
+            f"dlcs, expansions, parent_game, category; where id = {external_id};"
+        )
 
         async with httpx.AsyncClient() as client:
             try:
@@ -110,6 +113,61 @@ class IGDBService(ContentProvider):
                 logger.error(f"Failed to get game details from IGDB: {e}")
                 return None
 
+    async def get_games_by_ids(self, game_ids: List[int]) -> List[Dict[str, Any]]:
+        """Fetch multiple games by IGDB IDs."""
+        if not game_ids:
+            return []
+
+        token = await self._get_token()
+        headers = {
+            "Client-ID": self.client_id,
+            "Authorization": f"Bearer {token}",
+        }
+        ids = ",".join(str(i) for i in game_ids)
+        body = (
+            f"fields name, cover.url, first_release_date, genres.name, "
+            f"dlcs, expansions, parent_game, category; "
+            f"where id = ({ids}); limit {min(len(game_ids), 500)};"
+        )
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    f"{self.base_url}/games",
+                    headers=headers,
+                    content=body,
+                )
+                response.raise_for_status()
+                return self._process_games(response.json())
+            except httpx.HTTPError as e:
+                logger.error(f"Failed to get games by ids from IGDB: {e}")
+                return []
+
+    async def get_game_dlcs(self, external_id: str) -> List[Dict[str, Any]]:
+        """Fetch DLC and expansions linked to a main game on IGDB."""
+        parent = await self.get_game_details(external_id)
+        if not parent:
+            return []
+
+        child_ids: List[int] = []
+        for key in ("dlcs", "expansions"):
+            values = parent.get(key) or []
+            for value in values:
+                if isinstance(value, int):
+                    child_ids.append(value)
+                elif isinstance(value, dict) and "id" in value:
+                    child_ids.append(int(value["id"]))
+
+        # Deduplicate while preserving order
+        seen: set[int] = set()
+        unique_ids: List[int] = []
+        for game_id in child_ids:
+            if game_id not in seen:
+                seen.add(game_id)
+                unique_ids.append(game_id)
+
+        return await self.get_games_by_ids(unique_ids)
+
     def _process_games(self, games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Process API response to format data for frontend."""
         processed_games = []
@@ -120,6 +178,10 @@ class IGDBService(ContentProvider):
                 "release_year": None,
                 "cover_url": None,
                 "genres": [],
+                "dlcs": game.get("dlcs") or [],
+                "expansions": game.get("expansions") or [],
+                "parent_game": game.get("parent_game"),
+                "category": game.get("category"),
             }
 
             # Year

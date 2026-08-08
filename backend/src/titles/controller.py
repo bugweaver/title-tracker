@@ -22,12 +22,13 @@ from core.models import (
     UserTitleEpisode,
 )
 from users.schemas import UserRead
-from user_titles.schemas import SeriesStructureRead, SeasonStructureRead
+from user_titles.schemas import SeriesStructureRead, SeasonStructureRead, GameDlcsRead
 from user_titles.structure_read import build_structure_response
 from user_titles.structure_sync import (
     supports_structure,
     sync_season_episodes_from_tmdb,
 )
+from user_titles.dlc_read import build_game_dlcs_response
 from .schemas import (
     TitleCreate,
     TitleRead,
@@ -74,8 +75,13 @@ class TitleController(Controller):
     ) -> list[UserTitleRead]:
         stmt = (
             select(UserTitle)
+            .join(Title, UserTitle.title_id == Title.id)
             .options(selectinload(UserTitle.title))
-            .where(UserTitle.user_id == user_id)
+            .where(
+                UserTitle.user_id == user_id,
+                # DLC/expansions are managed under the parent game
+                Title.parent_title_id.is_(None),
+            )
             .order_by(UserTitle.updated_at.desc())
         )
 
@@ -128,6 +134,30 @@ class TitleController(Controller):
             item.view_count = count_result.scalar() or 0
 
         return item
+
+    @get("/entry/{user_title_id:int}/dlcs")
+    async def get_user_title_dlcs(
+        self,
+        user_title_id: int,
+        db_session: AsyncSession,
+    ) -> GameDlcsRead:
+        """Public DLC list for a game user-title entry."""
+        stmt = (
+            select(UserTitle)
+            .options(selectinload(UserTitle.title))
+            .where(UserTitle.id == user_title_id)
+        )
+        result = await db_session.execute(stmt)
+        user_title = result.scalar_one_or_none()
+        if not user_title:
+            raise NotFoundException(detail="Entry not found")
+        if user_title.title.category != TitleCategory.GAME:
+            raise HTTPException(detail="Not a game", status_code=400)
+        if user_title.title.parent_title_id is not None:
+            raise HTTPException(detail="DLC has no nested DLC list", status_code=400)
+
+        # Public view uses catalog already linked; avoid IGDB calls on every view
+        return await build_game_dlcs_response(db_session, user_title, sync=False)
 
     @get("/entry/{user_title_id:int}/structure")
     async def get_user_title_structure(

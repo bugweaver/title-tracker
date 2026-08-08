@@ -45,6 +45,11 @@ class Title(IntIdPkMixin, Base):
     name: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     category: Mapped[TitleCategory] = mapped_column(nullable=False)
     external_id: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True) # IGDB ID, TMDB ID etc.
+    parent_title_id: Mapped[int | None] = mapped_column(
+        ForeignKey("titles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     
     # Metadata
     cover_image: Mapped[str | None] = mapped_column(String(512))
@@ -58,6 +63,17 @@ class Title(IntIdPkMixin, Base):
         cascade="all, delete-orphan",
         order_by="TitleSeason.season_number",
         lazy="selectin",
+    )
+    parent: Mapped["Title | None"] = relationship(
+        "Title",
+        remote_side="Title.id",
+        foreign_keys=[parent_title_id],
+        back_populates="dlcs",
+    )
+    dlcs: Mapped[list["Title"]] = relationship(
+        "Title",
+        foreign_keys=[parent_title_id],
+        back_populates="parent",
     )
 
 

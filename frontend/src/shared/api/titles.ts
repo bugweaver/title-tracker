@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import type {
   GamePlatform,
+  GameDlcs,
   SeriesStructure,
   SeasonStructure,
   UserTitle,
@@ -61,6 +62,14 @@ export interface UpdateEpisodeRequest {
   status?: UserTitleStatus;
   score?: number;
   clear_score?: boolean;
+}
+
+export interface UpdateDlcRequest {
+  status?: UserTitleStatus;
+  score?: number;
+  clear_score?: boolean;
+  review_text?: string;
+  is_spoiler?: boolean;
 }
 
 export const titlesApi = {
@@ -136,4 +145,19 @@ export const titlesApi = {
     apiClient.post<SeriesStructure>(
       `/user-titles/${userTitleId}/seasons/${seasonNumber}/reset-score`,
     ),
+
+  getDlcs: (userTitleId: number) =>
+    apiClient.get<GameDlcs>(`/user-titles/${userTitleId}/dlcs`),
+
+  getPublicDlcs: (userTitleId: number) =>
+    apiClient.get<GameDlcs>(`/titles/entry/${userTitleId}/dlcs`),
+
+  syncDlcs: (userTitleId: number) =>
+    apiClient.post<GameDlcs>(`/user-titles/${userTitleId}/sync-dlcs`),
+
+  updateDlc: (userTitleId: number, dlcTitleId: number, data: UpdateDlcRequest) =>
+    apiClient.put<GameDlcs>(`/user-titles/${userTitleId}/dlcs/${dlcTitleId}`, data),
+
+  deleteDlcTracking: (userTitleId: number, dlcTitleId: number) =>
+    apiClient.delete(`/user-titles/${userTitleId}/dlcs/${dlcTitleId}`),
 };

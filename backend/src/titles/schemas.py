@@ -15,6 +15,7 @@ class TitleBase(BaseModel):
     description: str | None = None
     release_year: int | None = None
     genres: list[str] | None = None
+    parent_title_id: int | None = None
 
 
 class TitleRead(TitleBase):
