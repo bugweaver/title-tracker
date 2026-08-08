@@ -188,7 +188,6 @@ class BackupController(Controller):
                     score_is_manual=user_season.score_is_manual,
                     review_text=user_season.review_text,
                     is_spoiler=user_season.is_spoiler,
-                    episodes_watched=user_season.episodes_watched,
                     episodes=episodes or None,
                 )
             )
@@ -469,7 +468,6 @@ class BackupController(Controller):
                     score_is_manual=season_item.score_is_manual,
                     review_text=season_item.review_text,
                     is_spoiler=season_item.is_spoiler,
-                    episodes_watched=season_item.episodes_watched,
                 )
                 db_session.add(user_season)
                 await db_session.flush()
@@ -479,7 +477,6 @@ class BackupController(Controller):
                 user_season.score_is_manual = season_item.score_is_manual
                 user_season.review_text = season_item.review_text
                 user_season.is_spoiler = season_item.is_spoiler
-                user_season.episodes_watched = season_item.episodes_watched
 
             for ep_item in season_item.episodes or []:
                 ep_stmt = select(TitleEpisode).where(

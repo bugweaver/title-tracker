@@ -1,7 +1,7 @@
 """tracking_progress_wishlist_lists
 
 Revision ID: a1b2c3d4e5f6
-Revises: c8d5f0a2e3b1
+Revises: b7c4e9a1d2f0
 Create Date: 2026-08-08 17:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = "a1b2c3d4e5f6"
-down_revision: Union[str, Sequence[str], None] = "c8d5f0a2e3b1"
+down_revision: Union[str, Sequence[str], None] = "b7c4e9a1d2f0"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
