@@ -19,6 +19,8 @@ class NotificationType(str, Enum):
     NEW_FOLLOWER = "new_follower"
     ON_HOLD_REMINDER = "on_hold_reminder"
     NEW_RELEASE = "new_release"
+    NEW_COMMENT = "new_comment"
+    NEW_REACTION = "new_reaction"
 
 
 class Notification(IntIdPkMixin, Base):

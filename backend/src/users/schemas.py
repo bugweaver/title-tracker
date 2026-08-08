@@ -26,3 +26,4 @@ class UserProfileUpdate(BaseModel):
 
 class FollowStatusResponse(BaseModel):
     is_following: bool
+

@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from litestar import Controller, get, post, Request
+from litestar import Controller, delete, get, post, put, Request
 from litestar.di import Provide
 from litestar.exceptions import HTTPException, NotFoundException
 from litestar.security.jwt import Token
@@ -16,12 +16,17 @@ from core.models import (
     Title,
     UserTitle,
     ReviewView,
+    ReviewComment,
+    ReviewReaction,
+    Notification,
+    NotificationType,
     UserTitleStatus,
     TitleCategory,
     TitleSeason,
     UserTitleSeason,
     UserTitleEpisode,
 )
+from core.privacy import ensure_can_view_user_library
 from users.schemas import UserRead
 from user_titles.schemas import SeriesStructureRead, SeasonStructureRead, GameDlcsRead
 from user_titles.structure_read import build_structure_response
@@ -37,6 +42,10 @@ from .schemas import (
     UserTitleCreate,
     ReviewViewRecordResponse,
     ReviewViewsResponse,
+    ReviewCommentCreate,
+    ReviewCommentRead,
+    ReviewReactionSet,
+    ReviewReactionsResponse,
 )
 
 
@@ -82,24 +91,15 @@ class TitleController(Controller):
         viewer_id: int,
         db_session: AsyncSession,
     ) -> None:
-        if owner_id == viewer_id:
-            return
+        await ensure_can_view_user_library(owner_id, viewer_id, db_session)
 
-        owner = await db_session.get(User, owner_id)
-        if not owner:
-            raise NotFoundException(detail="User not found")
-        if not owner.is_private:
-            return
-
-        from core.models.user import subscriptions_table
-
-        follow_check = select(func.count()).select_from(subscriptions_table).where(
-            subscriptions_table.c.follower_id == viewer_id,
-            subscriptions_table.c.following_id == owner_id,
-        )
-        result = await db_session.execute(follow_check)
-        if (result.scalar() or 0) == 0:
-            raise HTTPException(detail="Профиль закрыт", status_code=403)
+    async def _get_user_title_or_404(
+        self, user_title_id: int, db_session: AsyncSession
+    ) -> UserTitle:
+        user_title = await db_session.get(UserTitle, user_title_id)
+        if not user_title:
+            raise NotFoundException(detail="Entry not found")
+        return user_title
 
     async def _get_titles_for_user(
         self,
@@ -380,6 +380,209 @@ class TitleController(Controller):
             count=count,
             viewers=[UserRead.model_validate(u) for u in viewers],
         )
+
+    @get("/entry/{user_title_id:int}/comments")
+    async def list_review_comments(
+        self,
+        user_title_id: int,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ReviewCommentRead]:
+        user_title = await self._get_user_title_or_404(user_title_id, db_session)
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
+        stmt = (
+            select(ReviewComment)
+            .options(selectinload(ReviewComment.author))
+            .where(ReviewComment.user_title_id == user_title_id)
+            .order_by(ReviewComment.created_at.asc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await db_session.execute(stmt)
+        return [ReviewCommentRead.model_validate(c) for c in result.scalars().all()]
+
+    @post("/entry/{user_title_id:int}/comments")
+    async def create_review_comment(
+        self,
+        user_title_id: int,
+        data: ReviewCommentCreate,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
+    ) -> ReviewCommentRead:
+        user_title = await self._get_user_title_or_404(user_title_id, db_session)
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
+        body = data.body.strip()
+        if not body:
+            raise HTTPException(detail="Comment cannot be empty", status_code=400)
+
+        comment = ReviewComment(
+            user_title_id=user_title_id,
+            author_id=request.user.id,
+            body=body,
+        )
+        db_session.add(comment)
+
+        if request.user.id != user_title.user_id:
+            db_session.add(
+                Notification(
+                    recipient_id=user_title.user_id,
+                    actor_id=request.user.id,
+                    user_title_id=user_title_id,
+                    type=NotificationType.NEW_COMMENT,
+                )
+            )
+
+        await db_session.commit()
+        await db_session.refresh(comment)
+        stmt = (
+            select(ReviewComment)
+            .options(selectinload(ReviewComment.author))
+            .where(ReviewComment.id == comment.id)
+        )
+        result = await db_session.execute(stmt)
+        return ReviewCommentRead.model_validate(result.scalar_one())
+
+    @delete("/entry/{user_title_id:int}/comments/{comment_id:int}", status_code=204)
+    async def delete_review_comment(
+        self,
+        user_title_id: int,
+        comment_id: int,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
+    ) -> None:
+        user_title = await self._get_user_title_or_404(user_title_id, db_session)
+        comment = await db_session.get(ReviewComment, comment_id)
+        if not comment or comment.user_title_id != user_title_id:
+            raise NotFoundException(detail="Comment not found")
+        if (
+            comment.author_id != request.user.id
+            and user_title.user_id != request.user.id
+        ):
+            raise HTTPException(detail="Forbidden", status_code=403)
+        await db_session.delete(comment)
+        await db_session.commit()
+
+    @get("/entry/{user_title_id:int}/reactions")
+    async def get_review_reactions(
+        self,
+        user_title_id: int,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
+    ) -> ReviewReactionsResponse:
+        user_title = await self._get_user_title_or_404(user_title_id, db_session)
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
+        counts_stmt = (
+            select(ReviewReaction.type, func.count())
+            .where(ReviewReaction.user_title_id == user_title_id)
+            .group_by(ReviewReaction.type)
+        )
+        counts_result = await db_session.execute(counts_stmt)
+        counts: dict[str, int] = {}
+        for row in counts_result.all():
+            key = row[0].value if hasattr(row[0], "value") else str(row[0])
+            counts[key] = row[1]
+
+        my_stmt = select(ReviewReaction).where(
+            ReviewReaction.user_title_id == user_title_id,
+            ReviewReaction.user_id == request.user.id,
+        )
+        my_result = await db_session.execute(my_stmt)
+        my_reaction = my_result.scalar_one_or_none()
+
+        my_type = None
+        if my_reaction is not None:
+            raw = my_reaction.type
+            my_type = raw.value if hasattr(raw, "value") else str(raw)
+
+        return ReviewReactionsResponse(
+            counts=counts,
+            my_reaction=my_type,
+            total=sum(counts.values()),
+        )
+
+    @put("/entry/{user_title_id:int}/reactions")
+    async def set_review_reaction(
+        self,
+        user_title_id: int,
+        data: ReviewReactionSet,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
+    ) -> ReviewReactionsResponse:
+        user_title = await self._get_user_title_or_404(user_title_id, db_session)
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
+
+        existing_stmt = select(ReviewReaction).where(
+            ReviewReaction.user_title_id == user_title_id,
+            ReviewReaction.user_id == request.user.id,
+        )
+        existing_result = await db_session.execute(existing_stmt)
+        existing = existing_result.scalar_one_or_none()
+
+        is_new = existing is None
+        if existing:
+            existing.type = data.type
+        else:
+            db_session.add(
+                ReviewReaction(
+                    user_title_id=user_title_id,
+                    user_id=request.user.id,
+                    type=data.type,
+                )
+            )
+
+        if is_new and request.user.id != user_title.user_id:
+            db_session.add(
+                Notification(
+                    recipient_id=user_title.user_id,
+                    actor_id=request.user.id,
+                    user_title_id=user_title_id,
+                    type=NotificationType.NEW_REACTION,
+                )
+            )
+
+        await db_session.commit()
+        return await self.get_review_reactions(user_title_id, request, db_session)
+
+    @delete("/entry/{user_title_id:int}/reactions", status_code=204)
+    async def delete_review_reaction(
+        self,
+        user_title_id: int,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
+    ) -> None:
+        user_title = await self._get_user_title_or_404(user_title_id, db_session)
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
+        existing_stmt = select(ReviewReaction).where(
+            ReviewReaction.user_title_id == user_title_id,
+            ReviewReaction.user_id == request.user.id,
+        )
+        existing_result = await db_session.execute(existing_stmt)
+        existing = existing_result.scalar_one_or_none()
+        if existing:
+            await db_session.delete(existing)
+            await db_session.commit()
 
     @post("/")
     async def create_title(

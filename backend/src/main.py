@@ -10,6 +10,8 @@ from notifications.controller import NotificationsController
 from screenshots.controller import ScreenshotsController
 from stats.controller import StatsController
 from lists.controller import ListsController
+from feed.controller import FeedController
+from social.controller import SocialController
 from auth.jwt import jwt_config
 from core.models.db_helper import db_helper
 from litestar import Litestar, Router
@@ -53,6 +55,8 @@ api_router = Router(path="/api/v1", route_handlers=[
     ScreenshotsController,
     StatsController,
     ListsController,
+    FeedController,
+    SocialController,
 ])
 
 

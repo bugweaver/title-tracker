@@ -10,6 +10,9 @@ import { titlesApi } from '@/shared/api/titles';
 import GamePlatformBadge from '@/features/games/ui/GamePlatformBadge.vue';
 import SeriesSeasonsEditor from '@/features/games/ui/SeriesSeasonsEditor.vue';
 import GameDlcsEditor from '@/features/games/ui/GameDlcsEditor.vue';
+import ReviewReactions from '@/features/reviews/ui/ReviewReactions.vue';
+import ReviewComments from '@/features/reviews/ui/ReviewComments.vue';
+
 
 interface ParsedSegment {
   id: number;
@@ -368,6 +371,15 @@ const formatDate = (dateStr: string | null | undefined) => {
         >
           {{ viewsLabel }} · Кто смотрел
         </button>
+
+        <div class="review-text-section review-accent-card">
+          <h2 class="section-title">Реакции</h2>
+          <ReviewReactions :user-title-id="entry.id" />
+        </div>
+
+        <div class="review-text-section review-accent-card">
+          <ReviewComments :user-title-id="entry.id" :owner-id="entry.user_id" />
+        </div>
 
         <!-- Screenshots gallery -->
         <div v-if="entry.screenshots && entry.screenshots.length > 0" class="screenshots-section review-accent-card">

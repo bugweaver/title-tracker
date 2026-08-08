@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { apiClient } from '@/shared/api';
+import FriendRecommendations from '@/features/social/ui/FriendRecommendations.vue';
 
 
 interface User {
@@ -70,6 +71,8 @@ onMounted(() => {
       <h1 class="text-2xl font-bold text-text sm:text-3xl">Сообщество</h1>
       <p class="text-text-muted">Ищите других пользователей и смотрите их коллекции</p>
     </div>
+
+    <FriendRecommendations :limit="12" />
 
     <!-- Search -->
     <div class="w-full max-w-md">

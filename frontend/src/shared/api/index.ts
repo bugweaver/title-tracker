@@ -9,3 +9,11 @@ export {
   type UserListDetail,
   type UserListItem,
 } from './lists';
+export { feedApi, type FeedItem } from './feed';
+export {
+  socialApi,
+  type RecommendationItem,
+  type CompareBucket,
+  type LibraryCompareResponse,
+} from './social';
+export { reviewsApi, type ReviewComment, type ReactionType } from './reviews';

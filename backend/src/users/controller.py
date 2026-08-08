@@ -1,21 +1,30 @@
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from sqlalchemy import select, or_, func, delete, insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from litestar import Controller, get, post, patch, delete as litestar_delete, Request
 from litestar.di import Provide
 from litestar.params import Parameter, Body
 from litestar.datastructures import UploadFile
 from litestar.enums import RequestEncodingType
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import HTTPException, NotFoundException
 from litestar.security.jwt import Token
 
 from core.models.db_helper import get_db_session
-from core.models import User
+from core.models import Title, User, UserTitle, UserTitleStatus
 from core.models.user import subscriptions_table
 from core.models.notification import Notification, NotificationType
+from core.privacy import ensure_can_view_user_library
+from titles.schemas import TitleRead
 from .schemas import UserRead, UserProfileRead, UserProfileUpdate, FollowStatusResponse
+from .compare_schemas import (
+    LibraryCompareCounts,
+    LibraryCompareItem,
+    LibraryCompareResponse,
+    LibraryCompareSide,
+)
 
 
 class UsersController(Controller):
@@ -192,6 +201,118 @@ class UsersController(Controller):
         await db_session.commit()
 
         return FollowStatusResponse(is_following=False)
+
+    @get("/{user_id:int}/compare")
+    async def compare_libraries(
+        self,
+        user_id: int,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
+        bucket: Literal[
+            "both_completed", "only_me", "only_them", "both_other"
+        ] = "both_completed",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> LibraryCompareResponse:
+        """Compare current user's library with another user's."""
+        if user_id == request.user.id:
+            raise HTTPException(detail="Cannot compare with yourself", status_code=400)
+
+        other = await db_session.get(User, user_id)
+        if not other:
+            raise NotFoundException(detail="User not found")
+
+        await ensure_can_view_user_library(user_id, request.user.id, db_session)
+
+        async def load_library(uid: int) -> dict[int, UserTitle]:
+            stmt = (
+                select(UserTitle)
+                .join(Title, Title.id == UserTitle.title_id)
+                .options(selectinload(UserTitle.title))
+                .where(
+                    UserTitle.user_id == uid,
+                    Title.parent_title_id.is_(None),
+                )
+            )
+            result = await db_session.execute(stmt)
+            return {ut.title_id: ut for ut in result.scalars().unique().all()}
+
+        mine = await load_library(request.user.id)
+        theirs = await load_library(user_id)
+
+        both_completed: list[int] = []
+        only_me: list[int] = []
+        only_them: list[int] = []
+        both_other: list[int] = []
+
+        all_ids = set(mine) | set(theirs)
+        for title_id in all_ids:
+            my_ut = mine.get(title_id)
+            their_ut = theirs.get(title_id)
+            if my_ut and their_ut:
+                if (
+                    my_ut.status == UserTitleStatus.COMPLETED
+                    and their_ut.status == UserTitleStatus.COMPLETED
+                ):
+                    both_completed.append(title_id)
+                else:
+                    both_other.append(title_id)
+            elif my_ut:
+                only_me.append(title_id)
+            else:
+                only_them.append(title_id)
+
+        counts = LibraryCompareCounts(
+            both_completed=len(both_completed),
+            only_me=len(only_me),
+            only_them=len(only_them),
+            both_other=len(both_other),
+        )
+
+        bucket_map = {
+            "both_completed": both_completed,
+            "only_me": only_me,
+            "only_them": only_them,
+            "both_other": both_other,
+        }
+        selected_ids = bucket_map[bucket]
+
+        def sort_key(tid: int) -> str:
+            ut = mine.get(tid) or theirs.get(tid)
+            return (ut.title.name if ut else "").lower()
+
+        selected_ids = sorted(selected_ids, key=sort_key)
+        page_ids = selected_ids[offset : offset + min(limit, 100)]
+
+        def side(ut: UserTitle | None) -> LibraryCompareSide:
+            if not ut:
+                return LibraryCompareSide()
+            status = ut.status.value if hasattr(ut.status, "value") else str(ut.status)
+            return LibraryCompareSide(
+                status=status,
+                score=ut.score,
+                user_title_id=ut.id,
+            )
+
+        items: list[LibraryCompareItem] = []
+        for tid in page_ids:
+            my_ut = mine.get(tid)
+            their_ut = theirs.get(tid)
+            title = (my_ut or their_ut).title  # type: ignore[union-attr]
+            items.append(
+                LibraryCompareItem(
+                    title=TitleRead.model_validate(title),
+                    me=side(my_ut),
+                    them=side(their_ut),
+                )
+            )
+
+        return LibraryCompareResponse(
+            other_user=UserRead.model_validate(other),
+            counts=counts,
+            bucket=bucket,
+            items=items,
+        )
 
     @get("/{user_id:int}/followers")
     async def get_followers(

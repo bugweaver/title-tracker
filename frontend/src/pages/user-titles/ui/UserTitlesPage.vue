@@ -303,15 +303,23 @@ watch(activeTab, () => {
         </div>
       </div>
 
-      <button
-        v-if="!isOwnProfile"
-        class="follow-btn"
-        :class="{ 'follow-btn--following': user?.is_following }"
-        :disabled="followLoading"
-        @click="toggleFollow"
-      >
-        {{ user?.is_following ? 'Отписаться' : 'Подписаться' }}
-      </button>
+      <div v-if="!isOwnProfile" class="flex flex-col gap-2">
+        <button
+          class="follow-btn"
+          :class="{ 'follow-btn--following': user?.is_following }"
+          :disabled="followLoading"
+          @click="toggleFollow"
+        >
+          {{ user?.is_following ? 'Отписаться' : 'Подписаться' }}
+        </button>
+        <RouterLink
+          v-if="!isLibraryPrivate"
+          :to="`/user/${userId}/compare`"
+          class="compare-btn"
+        >
+          Сравнить библиотеку
+        </RouterLink>
+      </div>
     </header>
 
     <div
@@ -446,6 +454,37 @@ watch(activeTab, () => {
   background: rgba(239, 68, 68, 0.1);
   border-color: #ef4444;
   color: #ef4444;
+}
+
+.compare-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  flex-shrink: 0;
+  align-self: center;
+  white-space: nowrap;
+  min-height: 44px;
+  text-decoration: none;
+  transition: all 0.2s;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.compare-btn:hover {
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+}
+
+@media (max-width: 639px) {
+  .compare-btn {
+    width: 100%;
+  }
 }
 
 .stat-link {

@@ -56,6 +56,18 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/feed',
+      name: 'feed',
+      component: () => import('@/pages/feed').then(m => m.FeedPage),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/user/:id/compare',
+      name: 'compare',
+      component: () => import('@/pages/compare').then(m => m.ComparePage),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('@/pages/settings/SettingsPage.vue'),

@@ -174,6 +174,14 @@ const categoryIcon = (cat: string) => {
                   <template v-if="n.type === 'new_follower'">
                     подписался на вас
                   </template>
+                  <template v-else-if="n.type === 'new_comment'">
+                    прокомментировал
+                    <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>
+                  </template>
+                  <template v-else-if="n.type === 'new_reaction'">
+                    отреагировал на
+                    <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>
+                  </template>
                   <template v-else>
                     {{ n.type === 'title_updated' ? ' обновил тайтл' : ' добавил тайтл' }}
                     <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>

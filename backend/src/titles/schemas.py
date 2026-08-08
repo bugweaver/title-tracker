@@ -1,7 +1,9 @@
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
+from core.models.review_social import ReactionType
 from core.models.title import GamePlatform, TitleCategory, UserTitleStatus
 from screenshots.schemas import ScreenshotRead
 from users.schemas import UserRead
@@ -61,6 +63,31 @@ class ReviewViewRecordResponse(BaseModel):
 class ReviewViewsResponse(BaseModel):
     count: int
     viewers: list[UserRead]
+
+
+class ReviewCommentCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class ReviewCommentRead(BaseModel):
+    id: int
+    user_title_id: int
+    body: str
+    created_at: datetime
+    updated_at: datetime
+    author: UserRead
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewReactionSet(BaseModel):
+    type: ReactionType
+
+
+class ReviewReactionsResponse(BaseModel):
+    counts: dict[str, int]
+    my_reaction: Literal["like", "love", "laugh", "wow", "sad"] | None = None
+    total: int = 0
 
 
 class UserTitleCreate(UserTitleBase):

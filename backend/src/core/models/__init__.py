@@ -20,6 +20,7 @@ from .title import GamePlatform, Title, UserTitle, TitleCategory, UserTitleStatu
 from .notification import Notification, NotificationType
 from .screenshot import TitleScreenshot
 from .review_view import ReviewView
+from .review_social import ReactionType, ReviewComment, ReviewReaction
 from .season import TitleSeason, TitleEpisode, UserTitleSeason, UserTitleEpisode
 from .user_list import UserList, UserListItem
 
@@ -36,6 +37,9 @@ __all__ = (
     "NotificationType",
     "TitleScreenshot",
     "ReviewView",
+    "ReactionType",
+    "ReviewComment",
+    "ReviewReaction",
     "TitleSeason",
     "TitleEpisode",
     "UserTitleSeason",
