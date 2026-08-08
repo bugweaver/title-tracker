@@ -42,8 +42,9 @@ class UserResponse(BaseModel):
     id: int
     email: EmailStr
     login: str
-    login: str
     name: str | None
     avatar_url: str | None = None
+    bio: str | None = None
+    is_private: bool = False
 
     model_config = ConfigDict(from_attributes=True)

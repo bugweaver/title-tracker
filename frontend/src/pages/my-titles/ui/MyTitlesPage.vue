@@ -330,6 +330,7 @@ const activeSearchCategory = computed(() => {
         <div class="mb-4 leading-tight">
           <h1 class="m-0 break-words text-2xl font-bold text-text sm:text-3xl">{{ user?.name || user?.login }}</h1>
           <p class="text-base font-medium text-text-secondary">@{{ user?.login }}</p>
+          <p v-if="user?.bio" class="mt-2 whitespace-pre-wrap text-sm text-text-secondary">{{ user.bio }}</p>
         </div>
         
         <div class="flex justify-center gap-5 sm:justify-start sm:gap-8">

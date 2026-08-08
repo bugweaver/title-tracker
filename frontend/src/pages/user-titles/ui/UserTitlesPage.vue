@@ -15,7 +15,7 @@ import {
 } from '@/entities/title';
 import UserGameCard from '@/features/games/ui/UserGameCard.vue';
 import AppSelect from '@/shared/ui/AppSelect.vue';
-import { usersApi, type UserProfile } from '@/shared/api';
+import { usersApi, type UserProfile, type ApiError } from '@/shared/api';
 import { useUserStore } from '@/entities/user';
 
 const route = useRoute();
@@ -25,6 +25,7 @@ const titles = ref<UserTitle[]>([]);
 const user = ref<UserProfile | null>(null);
 const isLoading = ref(false);
 const followLoading = ref(false);
+const isLibraryPrivate = ref(false);
 
 const isOwnProfile = computed(() => userStore.user?.id === userId.value);
 
@@ -62,10 +63,17 @@ const fetchUser = async () => {
 
 const fetchTitles = async () => {
     isLoading.value = true;
+    isLibraryPrivate.value = false;
     try {
         titles.value = await titlesApi.getUserTitles(userId.value);
     } catch (e) {
-        console.error(e);
+        const apiError = e as ApiError;
+        if (apiError.status === 403) {
+            titles.value = [];
+            isLibraryPrivate.value = true;
+        } else {
+            console.error(e);
+        }
     } finally {
         isLoading.value = false;
     }
@@ -79,10 +87,15 @@ const toggleFollow = async () => {
       await usersApi.unfollow(userId.value);
       user.value.is_following = false;
       user.value.followers_count--;
+      if (user.value.is_private) {
+        titles.value = [];
+        isLibraryPrivate.value = true;
+      }
     } else {
       await usersApi.follow(userId.value);
       user.value.is_following = true;
       user.value.followers_count++;
+      await fetchTitles();
     }
   } catch (e) {
     console.error('Follow action failed', e);
@@ -252,6 +265,7 @@ watch(activeTab, () => {
         <div class="mb-4 leading-tight">
           <h1 class="m-0 break-words text-2xl font-bold text-text sm:text-3xl">{{ user?.name || user?.login || `Пользователь #${userId}` }}</h1>
           <p v-if="user?.name" class="text-text-secondary">@{{ user.login }}</p>
+          <p v-if="user?.bio" class="mt-2 whitespace-pre-wrap text-sm text-text-secondary">{{ user.bio }}</p>
         </div>
         
         <div class="flex justify-center gap-5 sm:justify-start sm:gap-8">
@@ -281,7 +295,17 @@ watch(activeTab, () => {
       </button>
     </header>
 
-    <div class="flex flex-col gap-6">
+    <div
+      v-if="isLibraryPrivate"
+      class="rounded-xl border border-border bg-surface px-4 py-10 text-center shadow-sm"
+    >
+      <p class="text-lg font-medium text-text">Профиль закрыт</p>
+      <p class="mt-2 text-sm text-text-secondary">
+        Библиотеку видят только подписчики. Подпишитесь, чтобы посмотреть тайтлы.
+      </p>
+    </div>
+
+    <div v-else class="flex flex-col gap-6">
       <div class="flex items-center gap-1 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2">
         <RouterLink
           v-for="tab in tabs"
@@ -331,25 +355,27 @@ watch(activeTab, () => {
       </div>
     </div>
 
-    <div v-if="isLoading" class="flex justify-center p-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-    </div>
+    <template v-if="!isLibraryPrivate">
+      <div v-if="isLoading" class="flex justify-center p-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+      </div>
 
-    <div v-else-if="displayedTitles.length > 0" class="flex flex-col gap-4">
-      <UserGameCard 
-        v-for="userTitle in displayedTitles" 
-        :key="userTitle.id"
-        :user-title="userTitle"
-      />
-    </div>
+      <div v-else-if="displayedTitles.length > 0" class="flex flex-col gap-4">
+        <UserGameCard 
+          v-for="userTitle in displayedTitles" 
+          :key="userTitle.id"
+          :user-title="userTitle"
+        />
+      </div>
 
-    <div v-else class="
-        flex flex-col items-center justify-center
-        py-12 px-4 sm:py-16 sm:px-8 bg-background-soft rounded-lg
-        border border-border text-center
-      ">
-      <p class="text-xl text-text mb-2">Список тайтлов пуст</p>
-    </div>
+      <div v-else class="
+          flex flex-col items-center justify-center
+          py-12 px-4 sm:py-16 sm:px-8 bg-background-soft rounded-lg
+          border border-border text-center
+        ">
+        <p class="text-xl text-text mb-2">Список тайтлов пуст</p>
+      </div>
+    </template>
   </div>
 </template>
 

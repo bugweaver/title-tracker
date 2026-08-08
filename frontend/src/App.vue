@@ -323,6 +323,9 @@ async function handleLogout() {
             <RouterLink to="/settings" class="flex min-h-11 items-center rounded-lg px-4 text-text transition-colors hover:bg-primary-500/10" active-class="bg-primary-500/10 text-primary-500">
               Настройки
             </RouterLink>
+            <RouterLink to="/about" class="flex min-h-11 items-center rounded-lg px-4 text-text transition-colors hover:bg-primary-500/10" active-class="bg-primary-500/10 text-primary-500">
+              О проекте
+            </RouterLink>
           </nav>
 
           <div class="mt-auto flex flex-col gap-2 border-t border-border pt-4">
@@ -345,6 +348,7 @@ async function handleLogout() {
         </template>
 
         <nav v-else class="flex flex-col gap-2">
+          <RouterLink to="/about" class="flex min-h-11 items-center rounded-lg px-4 text-text hover:bg-primary-500/10">О проекте</RouterLink>
           <RouterLink to="/login" class="flex min-h-11 items-center rounded-lg px-4 text-text hover:bg-primary-500/10">Войти</RouterLink>
           <RouterLink to="/register" class="flex min-h-11 items-center rounded-lg px-4 text-text hover:bg-primary-500/10">Регистрация</RouterLink>
         </nav>
@@ -423,6 +427,13 @@ async function handleLogout() {
         >
           Настройки
         </RouterLink>
+        <RouterLink
+          to="/about"
+          :class="navLinkClass"
+          active-class="text-primary-500"
+        >
+          О проекте
+        </RouterLink>
           <div class="flex-grow"></div>
           <NotificationBell
             v-if="!isSideNavbar"
@@ -462,6 +473,13 @@ async function handleLogout() {
           </div>
         </template>
         <template v-else>
+          <RouterLink
+            to="/about"
+            :class="navLinkClass"
+            active-class="text-primary-500"
+          >
+            О проекте
+          </RouterLink>
           <RouterLink
             to="/login"
             :class="navLinkClass"

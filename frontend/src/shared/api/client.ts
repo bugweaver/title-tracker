@@ -190,6 +190,14 @@ class ApiClient {
     });
   }
 
+  async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
   private onUnauthorized: (() => void) | null = null;
   
   public setUnauthorizedHandler(handler: () => void) {

@@ -17,6 +17,7 @@ from core.models import (
     UserTitle,
     ReviewView,
     UserTitleStatus,
+    TitleCategory,
     TitleSeason,
     UserTitleSeason,
     UserTitleEpisode,
@@ -62,10 +63,43 @@ class TitleController(Controller):
 
     @get("/user/{user_id:int}")
     async def get_user_titles(
-        self, user_id: int, db_session: AsyncSession
+        self,
+        user_id: int,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
     ) -> list[UserTitleRead]:
         """Get public titles for a specific user."""
+        await self._ensure_can_view_user_library(
+            owner_id=user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
         return await self._get_titles_for_user(user_id, db_session)
+
+    async def _ensure_can_view_user_library(
+        self,
+        owner_id: int,
+        viewer_id: int,
+        db_session: AsyncSession,
+    ) -> None:
+        if owner_id == viewer_id:
+            return
+
+        owner = await db_session.get(User, owner_id)
+        if not owner:
+            raise NotFoundException(detail="User not found")
+        if not owner.is_private:
+            return
+
+        from core.models.user import subscriptions_table
+
+        follow_check = select(func.count()).select_from(subscriptions_table).where(
+            subscriptions_table.c.follower_id == viewer_id,
+            subscriptions_table.c.following_id == owner_id,
+        )
+        result = await db_session.execute(follow_check)
+        if (result.scalar() or 0) == 0:
+            raise HTTPException(detail="Профиль закрыт", status_code=403)
 
     async def _get_titles_for_user(
         self,
@@ -125,6 +159,12 @@ class TitleController(Controller):
         if not user_title:
             raise NotFoundException(detail="Entry not found")
 
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
+
         item = UserTitleRead.model_validate(user_title)
         if request.user.id == user_title.user_id:
             count_stmt = select(func.count()).select_from(ReviewView).where(
@@ -139,6 +179,7 @@ class TitleController(Controller):
     async def get_user_title_dlcs(
         self,
         user_title_id: int,
+        request: Request[User, Token, Any],
         db_session: AsyncSession,
     ) -> GameDlcsRead:
         """Public DLC list for a game user-title entry."""
@@ -151,6 +192,11 @@ class TitleController(Controller):
         user_title = result.scalar_one_or_none()
         if not user_title:
             raise NotFoundException(detail="Entry not found")
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
         if user_title.title.category != TitleCategory.GAME:
             raise HTTPException(detail="Not a game", status_code=400)
         if user_title.title.parent_title_id is not None:
@@ -163,6 +209,7 @@ class TitleController(Controller):
     async def get_user_title_structure(
         self,
         user_title_id: int,
+        request: Request[User, Token, Any],
         db_session: AsyncSession,
     ) -> SeriesStructureRead:
         """Public series structure (seasons/episodes) for a user-title entry."""
@@ -175,6 +222,11 @@ class TitleController(Controller):
         user_title = result.scalar_one_or_none()
         if not user_title:
             raise NotFoundException(detail="Entry not found")
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
         if not supports_structure(user_title.title.category):
             raise HTTPException(detail="Not a series or anime", status_code=400)
 
@@ -210,6 +262,7 @@ class TitleController(Controller):
         self,
         user_title_id: int,
         season_number: int,
+        request: Request[User, Token, Any],
         db_session: AsyncSession,
     ) -> SeasonStructureRead:
         """Sync episode catalog for a season (any authenticated viewer)."""
@@ -222,6 +275,11 @@ class TitleController(Controller):
         user_title = result.scalar_one_or_none()
         if not user_title:
             raise NotFoundException(detail="Entry not found")
+        await self._ensure_can_view_user_library(
+            owner_id=user_title.user_id,
+            viewer_id=request.user.id,
+            db_session=db_session,
+        )
         if not supports_structure(user_title.title.category):
             raise HTTPException(detail="Not a series or anime", status_code=400)
 
@@ -239,7 +297,9 @@ class TitleController(Controller):
         )
         await db_session.commit()
 
-        structure = await self.get_user_title_structure(user_title_id, db_session)
+        structure = await self.get_user_title_structure(
+            user_title_id, request, db_session
+        )
         for season in structure.seasons:
             if season.season_number == season_number:
                 return season

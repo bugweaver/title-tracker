@@ -4,6 +4,8 @@ export interface User {
   login: string;
   name: string | null;
   avatar_url: string | null;
+  bio: string | null;
+  is_private: boolean;
 }
 
 export interface TokenInfo {

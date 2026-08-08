@@ -6,6 +6,8 @@ export interface User {
   login: string;
   name: string | null;
   avatar_url: string | null;
+  bio: string | null;
+  is_private: boolean;
 }
 
 export interface UserProfile extends User {
@@ -14,12 +16,20 @@ export interface UserProfile extends User {
   is_following: boolean;
 }
 
+export interface UserProfileUpdate {
+  name?: string | null;
+  bio?: string | null;
+  is_private?: boolean;
+}
+
 export interface FollowStatus {
   is_following: boolean;
 }
 
 export const usersApi = {
   getUser: (id: number) => apiClient.get<UserProfile>(`/users/${id}`),
+  updateProfile: (data: UserProfileUpdate) =>
+    apiClient.patch<User>('/users/me', data),
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);

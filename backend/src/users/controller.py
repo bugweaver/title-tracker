@@ -3,18 +3,19 @@ from typing import Annotated, Any
 from sqlalchemy import select, or_, func, delete, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from litestar import Controller, get, post, delete as litestar_delete, Request
+from litestar import Controller, get, post, patch, delete as litestar_delete, Request
 from litestar.di import Provide
 from litestar.params import Parameter, Body
 from litestar.datastructures import UploadFile
 from litestar.enums import RequestEncodingType
 from litestar.exceptions import NotFoundException
+from litestar.security.jwt import Token
 
 from core.models.db_helper import get_db_session
 from core.models import User
 from core.models.user import subscriptions_table
 from core.models.notification import Notification, NotificationType
-from .schemas import UserRead, UserProfileRead, FollowStatusResponse
+from .schemas import UserRead, UserProfileRead, UserProfileUpdate, FollowStatusResponse
 
 
 class UsersController(Controller):
@@ -95,10 +96,35 @@ class UsersController(Controller):
             login=user.login,
             name=user.name,
             avatar_url=user.avatar_url,
+            bio=user.bio,
+            is_private=user.is_private,
             followers_count=followers_count,
             following_count=following_count,
             is_following=is_following,
         )
+
+    @patch("/me")
+    async def update_me(
+        self,
+        data: UserProfileUpdate,
+        request: Request[User, Token, Any],
+        db_session: AsyncSession,
+    ) -> UserRead:
+        """Update current user's profile fields."""
+        user = request.user
+        payload = data.model_dump(exclude_unset=True)
+
+        if "name" in payload:
+            user.name = payload["name"]
+        if "bio" in payload:
+            user.bio = payload["bio"]
+        if "is_private" in payload and payload["is_private"] is not None:
+            user.is_private = payload["is_private"]
+
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+        return UserRead.model_validate(user)
 
     @post("/{user_id:int}/follow")
     async def follow_user(
