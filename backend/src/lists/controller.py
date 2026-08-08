@@ -188,7 +188,7 @@ class ListsController(Controller):
         data: UserListItemCreate,
         db_session: AsyncSession,
     ) -> UserListDetail:
-        user_list = await _get_owned_list(db_session, list_id, request.user.id)
+        await _get_owned_list(db_session, list_id, request.user.id)
 
         ut_stmt = select(UserTitle).where(
             UserTitle.id == data.user_title_id,
