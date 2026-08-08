@@ -189,7 +189,7 @@ const clearDlcTracking = async (dlc: DlcItem) => {
 <template>
   <div
     v-if="!(readonly && !isLoading && (!structure || structure.dlcs.length === 0))"
-    class="space-y-3"
+    class="flex flex-col gap-3"
   >
     <div class="flex items-center justify-between gap-2">
       <h3 class="text-sm font-medium text-[var(--color-text-secondary)]">DLC и дополнения</h3>
@@ -203,6 +203,7 @@ const clearDlcTracking = async (dlc: DlcItem) => {
       DLC не найдены
     </div>
 
+    <div class="flex flex-col gap-2">
     <div
       v-for="dlc in structure?.dlcs ?? []"
       :key="dlc.title_id"
@@ -282,6 +283,7 @@ const clearDlcTracking = async (dlc: DlcItem) => {
           </div>
         </template>
       </div>
+    </div>
     </div>
   </div>
 </template>
