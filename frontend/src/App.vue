@@ -8,7 +8,7 @@ import NotificationBell from '@/components/NotificationBell.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
-const { toggleTheme, resolvedTheme } = useTheme()
+const { toggleTheme, themeMode, activeTheme } = useTheme()
 const { navbarPosition, navbarPositionOptions, setNavbarPosition } = useNavbarPosition()
 
 const isNavbarPositionMenuOpen = ref(false)
@@ -25,14 +25,8 @@ const primaryNav = [
   { to: '/community', label: 'Сообщество' },
 ] as const
 
-const themeIcon = computed(() => {
-  switch (resolvedTheme.value) {
-    case 'light': return '☀️'
-    case 'dark': return '🌙'
-    case 'midnight': return '🌌'
-    default: return '🌗'
-  }
-})
+const themeIcon = computed(() => (themeMode.value === 'light' ? '☀️' : '🌙'))
+const themeLabel = computed(() => activeTheme.value.name)
 
 const navbarPositionIcon = computed(() => {
   switch (navbarPosition.value) {
@@ -351,9 +345,10 @@ async function handleLogout() {
             <button
               type="button"
               class="flex min-h-11 items-center justify-between rounded-lg border border-border px-4 text-left text-text transition-colors hover:bg-surface-hover"
+              :title="`Тема: ${themeLabel}. Клик — следующая, полный список в Настройках.`"
               @click="toggleTheme"
             >
-              <span>Тема</span>
+              <span>Тема: {{ themeLabel }}</span>
               <span aria-hidden="true">{{ themeIcon }}</span>
             </button>
             <button
@@ -482,9 +477,10 @@ async function handleLogout() {
                       type="button"
                       class="flex min-h-10 w-full items-center justify-between rounded-lg px-3 text-left text-sm text-text transition-colors hover:bg-surface-hover"
                       role="menuitem"
+                      :title="`Тема: ${themeLabel}. Клик — следующая, полный список в Настройках.`"
                       @click="toggleTheme"
                     >
-                      <span>Тема</span>
+                      <span>Тема: {{ themeLabel }}</span>
                       <span aria-hidden="true">{{ themeIcon }}</span>
                     </button>
 

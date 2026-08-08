@@ -509,7 +509,7 @@ const formatDate = (dateStr: string | null | undefined) => {
 }
 
 :global(:root),
-:global([data-theme="light"]) {
+:global([data-theme-mode="light"]) {
   --review-card-tint: 5%;
   --review-card-tint-strong: 8%;
   --review-card-border: 22%;
@@ -517,20 +517,12 @@ const formatDate = (dateStr: string | null | undefined) => {
   --review-badge-tint: 10%;
 }
 
-:global([data-theme="dark"]) {
+:global([data-theme-mode="dark"]) {
   --review-card-tint: 8%;
   --review-card-tint-strong: 12%;
   --review-card-border: 28%;
   --review-card-shadow: 0.18;
   --review-badge-tint: 14%;
-}
-
-:global([data-theme="midnight"]) {
-  --review-card-tint: 10%;
-  --review-card-tint-strong: 14%;
-  --review-card-border: 32%;
-  --review-card-shadow: 0.2;
-  --review-badge-tint: 16%;
 }
 
 .review-accent-card {

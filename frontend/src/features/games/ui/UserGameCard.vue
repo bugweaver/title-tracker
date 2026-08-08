@@ -441,7 +441,7 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
 
 <style scoped>
 :global(:root),
-:global([data-theme="light"]) {
+:global([data-theme-mode="light"]) {
   --game-card-tint: 5%;
   --game-card-overlay: 0.08;
   --game-card-border: 24%;
@@ -452,7 +452,7 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   --completion-badge-shadow: 0.24;
 }
 
-:global([data-theme="dark"]) {
+:global([data-theme-mode="dark"]) {
   --game-card-tint: 8%;
   --game-card-overlay: 0.12;
   --game-card-border: 30%;
@@ -461,17 +461,6 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
   --completion-badge-text: #0f172a;
   --completion-badge-border: 0.55;
   --completion-badge-shadow: 0.28;
-}
-
-:global([data-theme="midnight"]) {
-  --game-card-tint: 10%;
-  --game-card-overlay: 0.14;
-  --game-card-border: 34%;
-  --game-card-shadow: 0.18;
-  --game-card-badge-tint: 16%;
-  --completion-badge-text: #0f172a;
-  --completion-badge-border: 0.6;
-  --completion-badge-shadow: 0.3;
 }
 
 .game-card {

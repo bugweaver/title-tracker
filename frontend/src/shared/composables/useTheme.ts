@@ -1,56 +1,78 @@
-import { ref, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import {
+  THEME_CATALOG,
+  THEME_IDS,
+  applyThemeVars,
+  getThemeById,
+  type ThemeDefinition,
+  type ThemeMode,
+} from '@/shared/theme';
 
-export type ThemeName = 'light' | 'dark' | 'midnight' | 'system';
+export type ThemeName = string;
 
 const STORAGE_KEY = 'theme-preference';
-const THEMES: ThemeName[] = ['light', 'dark', 'midnight'];
 
-// Global reactive theme state
-const currentTheme = ref<ThemeName>('system');
-const resolvedTheme = ref<Exclude<ThemeName, 'system'>>('light');
+const currentTheme = ref<ThemeName>('light');
+const resolvedTheme = ref<ThemeName>('light');
+const previewThemeId = ref<ThemeName | null>(null);
 
-function getSystemTheme(): Exclude<ThemeName, 'system'> {
+function getSystemThemeId(): ThemeName {
   if (typeof window === 'undefined') return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function applyTheme(theme: Exclude<ThemeName, 'system'>) {
-  document.documentElement.setAttribute('data-theme', theme);
-  resolvedTheme.value = theme;
+function resolveThemeId(theme: ThemeName): ThemeName {
+  if (theme === 'system') return getSystemThemeId();
+  return THEME_IDS.includes(theme) ? theme : 'light';
 }
 
-function resolveTheme(theme: ThemeName): Exclude<ThemeName, 'system'> {
-  return theme === 'system' ? getSystemTheme() : theme;
+function paintTheme(themeId: ThemeName) {
+  const theme = getThemeById(themeId);
+  applyThemeVars(theme);
+  resolvedTheme.value = theme.id;
+}
+
+function applyStoredOrPreview() {
+  const id = previewThemeId.value ?? resolveThemeId(currentTheme.value);
+  paintTheme(id);
 }
 
 export function useTheme() {
+  const activeTheme = computed<ThemeDefinition>(() => getThemeById(resolvedTheme.value));
+  const themeMode = computed<ThemeMode>(() => activeTheme.value.mode);
+
   function setTheme(theme: ThemeName) {
+    previewThemeId.value = null;
     currentTheme.value = theme;
     localStorage.setItem(STORAGE_KEY, theme);
-    applyTheme(resolveTheme(theme));
+    paintTheme(resolveThemeId(theme));
+  }
+
+  function previewTheme(themeId: ThemeName | null) {
+    previewThemeId.value = themeId && THEME_IDS.includes(themeId) ? themeId : null;
+    applyStoredOrPreview();
   }
 
   function toggleTheme() {
-    const current = resolvedTheme.value;
-    const currentIndex = THEMES.indexOf(current);
-    const nextIndex = (currentIndex + 1) % THEMES.length;
-    const nextTheme = THEMES[nextIndex];
-    if (nextTheme) {
-      setTheme(nextTheme);
-    }
+    const currentId = resolvedTheme.value;
+    const currentIndex = THEME_IDS.indexOf(currentId);
+    const nextIndex = (currentIndex + 1) % THEME_IDS.length;
+    const nextTheme = THEME_IDS[nextIndex] ?? 'light';
+    setTheme(nextTheme);
   }
 
   function initTheme() {
-    const stored = localStorage.getItem(STORAGE_KEY) as ThemeName | null;
-    const initial = stored && [...THEMES, 'system'].includes(stored) ? stored : 'system';
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const initial = stored && (stored === 'system' || THEME_IDS.includes(stored))
+      ? stored
+      : 'system';
     currentTheme.value = initial;
-    applyTheme(resolveTheme(initial));
+    paintTheme(resolveThemeId(initial));
 
-    // Listen for system theme changes
     if (typeof window !== 'undefined') {
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        if (currentTheme.value === 'system') {
-          applyTheme(getSystemTheme());
+        if (currentTheme.value === 'system' && !previewThemeId.value) {
+          paintTheme(getSystemThemeId());
         }
       });
     }
@@ -63,8 +85,12 @@ export function useTheme() {
   return {
     theme: currentTheme,
     resolvedTheme,
-    themes: THEMES,
+    activeTheme,
+    themeMode,
+    themes: THEME_CATALOG,
+    themeIds: THEME_IDS,
     setTheme,
+    previewTheme,
     toggleTheme,
     initTheme,
   };
@@ -72,7 +98,10 @@ export function useTheme() {
 
 // Initialize immediately to prevent flash
 if (typeof window !== 'undefined') {
-  const stored = localStorage.getItem(STORAGE_KEY) as ThemeName | null;
-  const initial = stored && [...THEMES, 'system'].includes(stored) ? stored : 'system';
-  applyTheme(resolveTheme(initial));
+  const stored = localStorage.getItem(STORAGE_KEY);
+  const initial = stored && (stored === 'system' || THEME_IDS.includes(stored))
+    ? stored
+    : 'system';
+  currentTheme.value = initial;
+  paintTheme(resolveThemeId(initial));
 }

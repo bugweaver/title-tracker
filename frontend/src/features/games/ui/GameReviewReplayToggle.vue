@@ -59,7 +59,7 @@ input:not(:checked) + .toggle-mark {
 }
 
 :global(:root),
-:global([data-theme="light"]) {
+:global([data-theme-mode="light"]) {
   --replay-toggle-glow: 0.12;
   --replay-toggle-tint: 8%;
   --replay-toggle-shadow: 0.22;
@@ -67,8 +67,7 @@ input:not(:checked) + .toggle-mark {
   --replay-toggle-mark-text: white;
 }
 
-:global([data-theme="dark"]),
-:global([data-theme="midnight"]) {
+:global([data-theme-mode="dark"]) {
   --replay-toggle-glow: 0.18;
   --replay-toggle-tint: 12%;
   --replay-toggle-shadow: 0.28;

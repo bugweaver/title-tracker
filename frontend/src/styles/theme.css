@@ -1,6 +1,7 @@
 /* ==========================================
    THEME SYSTEM
-   Use data-theme attribute on <html> to switch
+   Colors are applied via JS (data-theme + CSS vars).
+   data-theme-mode="light|dark" drives component tint overrides.
    ========================================== */
 
 @theme {
@@ -73,17 +74,16 @@
     }
 }
 
-/* ==========================================
-   LIGHT THEME (default)
-   ========================================== */
-:root,
-[data-theme="light"] {
+/* Fallback before JS runs (matches Light theme) */
+:root {
     --color-text-primary: var(--theme-text);
     --color-text-tertiary: var(--theme-text-muted);
     --color-bg-secondary: var(--theme-bg-soft);
     --color-bg-tertiary: var(--theme-bg-mute);
     --color-border-primary: var(--theme-border);
     --touch-target: 44px;
+
+    --theme-primary: #10b981;
     --theme-primary-50: #ecfdf5;
     --theme-primary-100: #d1fae5;
     --theme-primary-200: #a7f3d0;
@@ -119,82 +119,6 @@
 }
 
 /* ==========================================
-   DARK THEME
-   ========================================== */
-[data-theme="dark"] {
-    --theme-primary-50: #064e3b;
-    --theme-primary-100: #065f46;
-    --theme-primary-200: #047857;
-    --theme-primary-300: #059669;
-    --theme-primary-400: #10b981;
-    --theme-primary-500: #34d399;
-    --theme-primary-600: #6ee7b7;
-    --theme-primary-700: #a7f3d0;
-    --theme-primary-800: #d1fae5;
-    --theme-primary-900: #ecfdf5;
-
-    --theme-bg: #0a0a0a;
-    --theme-bg-soft: #141414;
-    --theme-bg-mute: #1a1a1a;
-    --theme-surface: #1e1e1e;
-    --theme-surface-hover: #2a2a2a;
-
-    --theme-text: #fafafa;
-    --theme-text-secondary: #a1a1aa;
-    --theme-text-muted: #71717a;
-
-    --theme-border: rgba(255, 255, 255, 0.1);
-    --theme-border-hover: rgba(255, 255, 255, 0.2);
-
-    --theme-error: #f87171;
-    --theme-error-bg: rgba(248, 113, 113, 0.15);
-    --theme-success: #34d399;
-    --theme-success-bg: rgba(52, 211, 153, 0.15);
-
-    --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-    --theme-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-/* ==========================================
-   MIDNIGHT THEME (example extra theme)
-   ========================================== */
-[data-theme="midnight"] {
-    --theme-primary-50: #312e81;
-    --theme-primary-100: #3730a3;
-    --theme-primary-200: #4338ca;
-    --theme-primary-300: #4f46e5;
-    --theme-primary-400: #6366f1;
-    --theme-primary-500: #818cf8;
-    --theme-primary-600: #a5b4fc;
-    --theme-primary-700: #c7d2fe;
-    --theme-primary-800: #e0e7ff;
-    --theme-primary-900: #eef2ff;
-
-    --theme-bg: #0f0f23;
-    --theme-bg-soft: #1a1a2e;
-    --theme-bg-mute: #16213e;
-    --theme-surface: #1f1f3a;
-    --theme-surface-hover: #2a2a4a;
-
-    --theme-text: #e0e0ff;
-    --theme-text-secondary: #a0a0cc;
-    --theme-text-muted: #6b6b99;
-
-    --theme-border: rgba(99, 102, 241, 0.2);
-    --theme-border-hover: rgba(99, 102, 241, 0.4);
-
-    --theme-error: #fb7185;
-    --theme-error-bg: rgba(251, 113, 133, 0.15);
-    --theme-success: #818cf8;
-    --theme-success-bg: rgba(129, 140, 248, 0.15);
-
-    --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
-    --theme-shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.15);
-}
-
-/* ==========================================
    BASE STYLES
    ========================================== */
 *,
@@ -214,7 +138,7 @@ body {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.25s ease, color 0.25s ease;
     overflow-wrap: break-word;
     -webkit-tap-highlight-color: transparent;
 }

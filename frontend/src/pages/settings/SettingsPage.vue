@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BackupSettings from '@/features/backup/BackupSettings.vue';
+import ThemePicker from '@/features/theme/ui/ThemePicker.vue';
 import ProfileSettings from '@/features/user/ui/ProfileSettings.vue';
 </script>
 
@@ -8,6 +9,7 @@ import ProfileSettings from '@/features/user/ui/ProfileSettings.vue';
     <h1 class="mb-5 text-2xl font-bold text-text sm:mb-8 sm:text-3xl">Настройки</h1>
 
     <div class="flex flex-col gap-6 sm:p-4">
+      <ThemePicker />
       <ProfileSettings />
       <BackupSettings />
     </div>

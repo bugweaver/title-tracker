@@ -143,7 +143,7 @@ const statusColorStyle = (status: UserTitleStatus): CSSProperties => {
 }
 
 :global(:root),
-:global([data-theme="light"]) {
+:global([data-theme-mode="light"]) {
   --status-idle-bg: 0.1;
   --status-idle-border: 0.28;
   --status-hover-bg: 0.16;
@@ -156,25 +156,12 @@ const statusColorStyle = (status: UserTitleStatus): CSSProperties => {
   --planned-status-hover-border: rgb(100 116 139);
 }
 
-:global([data-theme="dark"]) {
+:global([data-theme-mode="dark"]) {
   --status-idle-bg: 0.12;
   --status-idle-border: 0.32;
   --status-hover-bg: 0.18;
   --status-hover-border: 0.5;
   --status-active-bg: 0.72;
-  --status-active-shadow: 0.18;
-  --planned-status-text: rgb(226 232 240);
-  --planned-status-active-text: rgb(30 41 59);
-  --planned-status-border: rgb(148 163 184 / 0.55);
-  --planned-status-hover-border: rgb(203 213 225 / 0.75);
-}
-
-:global([data-theme="midnight"]) {
-  --status-idle-bg: 0.14;
-  --status-idle-border: 0.36;
-  --status-hover-bg: 0.2;
-  --status-hover-border: 0.54;
-  --status-active-bg: 0.64;
   --status-active-shadow: 0.18;
   --planned-status-text: rgb(226 232 240);
   --planned-status-active-text: rgb(30 41 59);

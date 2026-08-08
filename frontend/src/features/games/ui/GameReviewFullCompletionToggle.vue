@@ -56,7 +56,7 @@ input:not(:checked) + .toggle-mark {
 }
 
 :global(:root),
-:global([data-theme="light"]) {
+:global([data-theme-mode="light"]) {
   --completion-toggle-glow: 0.12;
   --completion-toggle-tint: 8%;
   --completion-toggle-shadow: 0.22;
@@ -64,8 +64,7 @@ input:not(:checked) + .toggle-mark {
   --completion-toggle-mark-text: white;
 }
 
-:global([data-theme="dark"]),
-:global([data-theme="midnight"]) {
+:global([data-theme-mode="dark"]) {
   --completion-toggle-glow: 0.18;
   --completion-toggle-tint: 12%;
   --completion-toggle-shadow: 0.28;

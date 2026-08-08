@@ -674,7 +674,7 @@ const handleDelete = async () => {
 }
 
 :global(:root),
-:global([data-theme="light"]) {
+:global([data-theme-mode="light"]) {
   --review-modal-tint: 0.08;
   --review-header-tint: 0.1;
   --review-footer-tint: 4%;
@@ -682,20 +682,12 @@ const handleDelete = async () => {
   --review-modal-shadow: 0.16;
 }
 
-:global([data-theme="dark"]) {
+:global([data-theme-mode="dark"]) {
   --review-modal-tint: 0.13;
   --review-header-tint: 0.14;
   --review-footer-tint: 8%;
   --review-modal-ring: 0.22;
   --review-modal-shadow: 0.54;
-}
-
-:global([data-theme="midnight"]) {
-  --review-modal-tint: 0.16;
-  --review-header-tint: 0.18;
-  --review-footer-tint: 10%;
-  --review-modal-ring: 0.28;
-  --review-modal-shadow: 0.5;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
