@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { getTitleStatusLabel, UserTitleStatus } from '@/entities/title';
 import { socialApi, type RecommendationItem } from '@/shared/api/social';
 
 const props = withDefaults(defineProps<{
@@ -26,6 +27,11 @@ const categoryIcon = (cat: string) => {
     case 'book': return '📚';
     default: return '📝';
   }
+};
+
+const completedVerb = (category: string) => {
+  const label = getTitleStatusLabel(UserTitleStatus.COMPLETED, category);
+  return label.charAt(0).toLowerCase() + label.slice(1);
 };
 
 onMounted(async () => {
@@ -72,7 +78,7 @@ onMounted(async () => {
             <span v-for="g in item.shared_genres.slice(0, 3)" :key="g" class="genre">{{ g }}</span>
           </div>
           <div class="by">
-            прошёл
+            {{ completedVerb(item.title.category) }}
             <button
               v-for="u in item.recommended_by"
               :key="u.id"
