@@ -46,6 +46,7 @@ class UserTitleRead(UserTitleBase):
     finished_at: datetime | None = None
     times_completed: int = 0
     is_completed_100_percent: bool = False
+    progress_value: int | None = None
     title: TitleRead
     screenshots: list[ScreenshotRead] = []
     view_count: int | None = None

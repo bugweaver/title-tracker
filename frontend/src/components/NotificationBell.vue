@@ -45,7 +45,7 @@ async function handleNotificationClick(notification: NotificationData) {
   isOpen.value = false;
   if (notification.type === 'new_follower') {
     router.push(`/user/${notification.actor.id}`);
-  } else {
+  } else if (notification.user_title_id) {
     router.push(`/review/${notification.user_title_id}`);
   }
 }
@@ -160,13 +160,24 @@ const categoryIcon = (cat: string) => {
             </div>
             <div class="notification-content">
               <p class="notification-text">
-                <strong>{{ n.actor.name || n.actor.login }}</strong>
-                <template v-if="n.type === 'new_follower'">
-                  подписался на вас
+                <template v-if="n.type === 'on_hold_reminder'">
+                  Напоминание: <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>
+                  давно на паузе
+                </template>
+                <template v-else-if="n.type === 'new_release'">
+                  Новый контент у
+                  <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>
+                  (сезон или DLC)
                 </template>
                 <template v-else>
-                  {{ n.type === 'title_updated' ? ' обновил тайтл' : ' добавил тайтл' }}
-                  <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>
+                  <strong>{{ n.actor.name || n.actor.login }}</strong>
+                  <template v-if="n.type === 'new_follower'">
+                    подписался на вас
+                  </template>
+                  <template v-else>
+                    {{ n.type === 'title_updated' ? ' обновил тайтл' : ' добавил тайтл' }}
+                    <span class="title-name">{{ categoryIcon(n.title?.category ?? '') }} {{ n.title?.name }}</span>
+                  </template>
                 </template>
               </p>
               <span class="notification-time">{{ formatTime(n.created_at) }}</span>

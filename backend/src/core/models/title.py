@@ -32,6 +32,7 @@ class UserTitleStatus(str, Enum):
     DROPPED = "dropped"
     PLANNED = "planned"
     ON_HOLD = "on_hold"
+    WISHLIST = "wishlist"
 
 
 class GamePlatform(str, Enum):
@@ -91,6 +92,8 @@ class UserTitle(IntIdPkMixin, Base):
     times_completed: Mapped[int] = mapped_column(default=0, server_default="0")
     is_completed_100_percent: Mapped[bool] = mapped_column(default=False, server_default="false")
     game_platform: Mapped[GamePlatform | None] = mapped_column(nullable=True)
+    # Unit depends on title category: hours / chapters / pages / volumes
+    progress_value: Mapped[int | None] = mapped_column(nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())

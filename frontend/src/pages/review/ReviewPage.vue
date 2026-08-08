@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, computed, watch, type CSSProperties } from
 import { useRoute, useRouter } from 'vue-router';
 import { apiClient } from '@/shared/api';
 import type { UserTitle } from '@/entities/title';
-import { getTitleStatusLabel } from '@/entities/title';
+import { formatProgressValue, getProgressLabel, getTitleStatusLabel } from '@/entities/title';
 import { useUserStore } from '@/entities/user';
 import { usersApi, type User } from '@/shared/api';
 import { titlesApi } from '@/shared/api/titles';
@@ -207,6 +207,16 @@ const isCompleted100PercentGame = computed(() =>
 
 const showTimesCompleted = computed(() => (entry.value?.times_completed ?? 0) > 1);
 
+const progressDisplay = computed(() => {
+  if (!entry.value) return null;
+  return formatProgressValue(entry.value.progress_value, entry.value.title.category);
+});
+
+const progressDetailLabel = computed(() => {
+  if (!entry.value) return 'Прогресс';
+  return getProgressLabel(entry.value.title.category);
+});
+
 const formatDate = (dateStr: string | null | undefined) => {
   if (!dateStr) return null;
   const str = new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -301,6 +311,10 @@ const formatDate = (dateStr: string | null | undefined) => {
               icon-size="lg"
               class="detail-value platform-detail-value"
             />
+          </div>
+          <div class="detail-card review-accent-card" v-if="progressDisplay">
+            <span class="detail-label">{{ progressDetailLabel }}</span>
+            <span class="detail-value">{{ progressDisplay }}</span>
           </div>
         </div>
 

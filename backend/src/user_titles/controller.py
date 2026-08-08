@@ -171,6 +171,7 @@ def _to_user_title_read(user_title: UserTitle) -> UserTitleRead:
         times_completed=user_title.times_completed,
         is_completed_100_percent=user_title.is_completed_100_percent,
         game_platform=user_title.game_platform,
+        progress_value=user_title.progress_value,
         screenshots=[
             ScreenshotRead.model_validate(s) for s in user_title.screenshots
         ],
@@ -240,6 +241,8 @@ class UserTitlesController(Controller):
             and data.is_completed_100_percent
         )
         game_platform = data.game_platform if data.type == "game" else None
+        progress_categories = {"game", "manga", "comics", "book"}
+        progress_value = data.progress_value if data.type in progress_categories else None
 
         # Explicit score from client marks series score as manual unless told otherwise
         score_is_manual = data.score_is_manual
@@ -260,6 +263,7 @@ class UserTitlesController(Controller):
                 or user_title.review_text != data.review_text
                 or user_title.is_completed_100_percent != is_completed_100_percent
                 or user_title.game_platform != game_platform
+                or user_title.progress_value != progress_value
                 or should_increment
             ):
                 has_meaningful_change = True
@@ -273,6 +277,7 @@ class UserTitlesController(Controller):
             user_title.is_spoiler = data.is_spoiler
             user_title.is_completed_100_percent = is_completed_100_percent
             user_title.game_platform = game_platform
+            user_title.progress_value = progress_value
 
             if should_increment:
                 user_title.times_completed += 1
@@ -311,6 +316,7 @@ class UserTitlesController(Controller):
                 times_completed=times_completed,
                 is_completed_100_percent=is_completed_100_percent,
                 game_platform=game_platform,
+                progress_value=progress_value,
             )
             db_session.add(user_title)
 

@@ -56,6 +56,12 @@ const statusColors: Record<UserTitleStatus, {
     activeTextRgb: '51 65 85',
     activeBg: '0.96',
   },
+  [UserTitleStatus.WISHLIST]: {
+    rgb: '168 85 247',
+    textRgb: '168 85 247',
+    activeTextRgb: '255 255 255',
+    activeBg: 'var(--status-active-bg)',
+  },
   [UserTitleStatus.ON_HOLD]: {
     rgb: '249 115 22',
     textRgb: '234 88 12',

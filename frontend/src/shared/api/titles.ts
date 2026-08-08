@@ -47,6 +47,7 @@ export interface AddUserTitleRequest {
   finished_at?: string;
   is_completed_100_percent?: boolean;
   game_platform?: GamePlatform | null;
+  progress_value?: number | null;
   increment_completion?: boolean;
 }
 

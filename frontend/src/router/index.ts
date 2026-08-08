@@ -38,6 +38,18 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/lists',
+      name: 'lists',
+      component: () => import('@/pages/lists').then(m => m.ListsPage),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/lists/:id',
+      name: 'list-detail',
+      component: () => import('@/pages/lists').then(m => m.ListDetailPage),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/community',
       name: 'community',
       component: () => import('@/pages/community').then(m => m.CommunityPage),

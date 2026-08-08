@@ -105,6 +105,7 @@ class BackupController(Controller):
                 times_completed=user_title.times_completed,
                 is_completed_100_percent=user_title.is_completed_100_percent,
                 game_platform=user_title.game_platform,
+                progress_value=user_title.progress_value,
                 screenshots=[s.url for s in user_title.screenshots],
                 seasons=seasons_payload or None,
                 dlcs=dlcs_payload or None,
@@ -133,6 +134,7 @@ class BackupController(Controller):
                 times_completed=ut.times_completed,
                 is_completed_100_percent=ut.is_completed_100_percent,
                 game_platform=ut.game_platform,
+                progress_value=ut.progress_value,
                 screenshots=[s.url for s in ut.screenshots],
             )
             backup_data.append(item.model_dump(mode="json"))
@@ -251,6 +253,7 @@ class BackupController(Controller):
                 times_completed=item.times_completed,
                 is_completed_100_percent=item.is_completed_100_percent,
                 game_platform=item.game_platform,
+                progress_value=item.progress_value,
             )
 
             if item.screenshots is not None:
@@ -287,6 +290,7 @@ class BackupController(Controller):
                         times_completed=dlc.times_completed,
                         is_completed_100_percent=dlc.is_completed_100_percent,
                         game_platform=dlc.game_platform,
+                        progress_value=None,
                     )
 
             processed_count += 1
@@ -349,6 +353,7 @@ class BackupController(Controller):
         times_completed: int,
         is_completed_100_percent: bool,
         game_platform,
+        progress_value: int | None = None,
     ) -> UserTitle:
         stmt = (
             pg_insert(UserTitle)
@@ -363,6 +368,7 @@ class BackupController(Controller):
                 times_completed=times_completed,
                 is_completed_100_percent=is_completed_100_percent,
                 game_platform=game_platform,
+                progress_value=progress_value,
             )
             .on_conflict_do_update(
                 index_elements=["user_id", "title_id"],
@@ -375,6 +381,7 @@ class BackupController(Controller):
                     "times_completed": times_completed,
                     "is_completed_100_percent": is_completed_100_percent,
                     "game_platform": game_platform,
+                    "progress_value": progress_value,
                     "updated_at": datetime.now(),
                 },
             )

@@ -27,7 +27,12 @@ async def sync_dlcs_from_igdb(db_session: AsyncSession, parent_title: Title) -> 
         existing_result = await db_session.execute(existing_stmt)
         return list(existing_result.scalars().all())
 
+    prior_stmt = select(Title.id).where(Title.parent_title_id == parent_title.id).limit(1)
+    prior_result = await db_session.execute(prior_stmt)
+    had_prior_dlcs = prior_result.scalar_one_or_none() is not None
+
     synced: list[Title] = []
+    had_new_dlc = False
     for game in dlc_games:
         external_id = str(game["id"])
         stmt = select(Title).where(
@@ -58,10 +63,16 @@ async def sync_dlcs_from_igdb(db_session: AsyncSession, parent_title: Title) -> 
                 parent_title_id=parent_title.id,
             )
             db_session.add(title)
+            had_new_dlc = True
 
         synced.append(title)
 
     await db_session.flush()
+
+    if had_new_dlc and had_prior_dlcs:
+        from notifications.reminders import notify_title_owners_of_new_release
+
+        await notify_title_owners_of_new_release(db_session, parent_title.id)
 
     # Include any previously linked children that IGDB no longer returns
     existing_stmt = (

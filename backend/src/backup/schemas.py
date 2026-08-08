@@ -60,6 +60,7 @@ class BackupItem(BaseModel):
     times_completed: int = 0
     is_completed_100_percent: bool = False
     game_platform: Optional[GamePlatform] = None
+    progress_value: Optional[int] = None
     screenshots: Optional[List[str]] = None
 
     seasons: Optional[List[BackupSeasonItem]] = None

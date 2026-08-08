@@ -5,11 +5,13 @@ import {
   type UserTitle,
   TitleCategory,
   UserTitleStatus,
+  formatProgressValue,
   getTitleStatusLabel,
   getTimesCompletedLabel,
 } from '@/entities/title';
 import GamePlatformBadge from './GamePlatformBadge.vue';
 import QuickStatusMenu from './QuickStatusMenu.vue';
+import AddToListMenu from '@/features/lists/ui/AddToListMenu.vue';
 
 const props = withDefaults(defineProps<{
   userTitle: UserTitle;
@@ -26,10 +28,16 @@ const emit = defineEmits<{
 }>();
 
 const isStatusMenuOpen = ref(false);
+const isListMenuOpen = ref(false);
 
 const toggleStatusMenu = () => {
   if (!props.editable || props.statusUpdating) return;
   isStatusMenuOpen.value = !isStatusMenuOpen.value;
+};
+
+const toggleListMenu = () => {
+  if (!props.editable) return;
+  isListMenuOpen.value = !isListMenuOpen.value;
 };
 
 const handleStatusSelect = (status: UserTitleStatus) => {
@@ -62,6 +70,9 @@ const cardToneRgb = computed<[number, number, number]>(() => {
     if (props.userTitle.status === 'on_hold') {
       return [249, 115, 22];
     }
+    if (props.userTitle.status === 'wishlist') {
+      return [168, 85, 247];
+    }
     return [113, 113, 122];
   }
 
@@ -87,9 +98,17 @@ const statusColorClass = computed(() => {
     if (s === 'playing' || s === 'watching') return 'bg-blue-100 text-blue-700';
     if (s === 'on_hold') return 'bg-amber-100 text-amber-700';
     if (s === 'planned') return 'bg-slate-100 text-slate-700';
+    if (s === 'wishlist') return 'bg-violet-100 text-violet-700';
     if (s === 'dropped') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-700';
 });
+
+const progressLabel = computed(() =>
+  formatProgressValue(
+    props.userTitle.progress_value,
+    props.userTitle.title.category,
+  )
+);
 
 const isCompleted100PercentGame = computed(() =>
   props.userTitle.title.category === TitleCategory.GAME
@@ -278,18 +297,46 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
           icon-size="lg"
           class="platform-badge text-xs px-2.5 py-1 rounded-full font-semibold"
         />
-        
-        <button 
-          v-if="editable"
-          class="ml-auto flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-primary-500)]"
-          @click.stop="$emit('edit', userTitle)"
-          title="Редактировать"
+
+        <span
+          v-if="progressLabel"
+          class="progress-badge text-xs px-2.5 py-1 rounded-full font-semibold"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-        </button>
+          {{ progressLabel }}
+        </span>
+
+        <div v-if="editable" class="relative ml-auto flex items-center gap-1" @click.stop>
+          <button
+            type="button"
+            class="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-primary-500)]"
+            title="Добавить в список"
+            @click="toggleListMenu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 6h13"></path>
+              <path d="M8 12h13"></path>
+              <path d="M8 18h13"></path>
+              <path d="M3 6h.01"></path>
+              <path d="M3 12h.01"></path>
+              <path d="M3 18h.01"></path>
+            </svg>
+          </button>
+          <AddToListMenu
+            :user-title-id="userTitle.id"
+            :open="isListMenuOpen"
+            @close="isListMenuOpen = false"
+          />
+          <button
+            class="flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-primary-500)]"
+            @click="$emit('edit', userTitle)"
+            title="Редактировать"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <!-- Title -->
@@ -469,6 +516,12 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown));
 }
 
 .platform-badge {
+  color: rgb(var(--card-tone-rgb));
+  background: color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-badge-tint), var(--color-surface-hover));
+  border: 1px solid color-mix(in srgb, rgb(var(--card-tone-rgb)) 28%, var(--color-border));
+}
+
+.progress-badge {
   color: rgb(var(--card-tone-rgb));
   background: color-mix(in srgb, rgb(var(--card-tone-rgb)) var(--game-card-badge-tint), var(--color-surface-hover));
   border: 1px solid color-mix(in srgb, rgb(var(--card-tone-rgb)) 28%, var(--color-border));

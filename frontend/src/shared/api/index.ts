@@ -3,3 +3,9 @@ export { usersApi, type User, type UserProfile } from './users';
 export type { TitleSearchResult } from './titles';
 export { notificationsApi } from './notifications';
 export { statsApi, type YearStats } from './stats';
+export {
+  listsApi,
+  type UserListSummary,
+  type UserListDetail,
+  type UserListItem,
+} from './lists';

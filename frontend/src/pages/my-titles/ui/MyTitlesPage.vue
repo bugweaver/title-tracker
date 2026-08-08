@@ -85,6 +85,7 @@ const selectedInitialData = ref<{
   finished_at?: string | null;
   is_completed_100_percent?: boolean;
   game_platform?: GamePlatform | null;
+  progress_value?: number | null;
   screenshots?: { id: number; url: string; position: number }[];
 } | null>(null);
 
@@ -110,6 +111,7 @@ const handleEditTitle = (userTitle: UserTitle) => {
     finished_at: userTitle.finished_at,
     is_completed_100_percent: userTitle.is_completed_100_percent,
     game_platform: userTitle.game_platform,
+    progress_value: userTitle.progress_value ?? null,
     screenshots: userTitle.screenshots || [],
   };
   

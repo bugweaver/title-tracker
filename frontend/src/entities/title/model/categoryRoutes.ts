@@ -1,7 +1,7 @@
 import { TitleCategory, UserTitleStatus } from './types';
 
 export const TITLE_CATEGORY_ROUTE_PATTERN = 'games|movies|shows|anime|manga|comics|books';
-export const TITLE_STATUS_ROUTE_PATTERN = 'all|completed|playing|watching|dropped|planned|on-hold';
+export const TITLE_STATUS_ROUTE_PATTERN = 'all|completed|playing|watching|dropped|planned|on-hold|wishlist';
 
 const categoryByRouteSegment: Record<string, TitleCategory> = {
   games: TitleCategory.GAME,
@@ -41,6 +41,7 @@ const statusByRouteSegment: Record<string, UserTitleStatus | 'all'> = {
   dropped: UserTitleStatus.DROPPED,
   planned: UserTitleStatus.PLANNED,
   'on-hold': UserTitleStatus.ON_HOLD,
+  wishlist: UserTitleStatus.WISHLIST,
 };
 
 const routeSegmentByStatus: Record<UserTitleStatus, string> & { all: string } = {
@@ -51,6 +52,7 @@ const routeSegmentByStatus: Record<UserTitleStatus, string> & { all: string } = 
   [UserTitleStatus.DROPPED]: 'dropped',
   [UserTitleStatus.PLANNED]: 'planned',
   [UserTitleStatus.ON_HOLD]: 'on-hold',
+  [UserTitleStatus.WISHLIST]: 'wishlist',
 };
 
 export const isReadingCategory = (category: TitleCategory | string) =>
@@ -100,8 +102,39 @@ export const getAvailableTitleStatuses = (category: TitleCategory) =>
       : []),
     UserTitleStatus.DROPPED,
     UserTitleStatus.PLANNED,
+    UserTitleStatus.WISHLIST,
     UserTitleStatus.ON_HOLD,
   ] as const;
+
+export const supportsProgressTracking = (category: TitleCategory | string) =>
+  category === TitleCategory.GAME
+  || category === TitleCategory.MANGA
+  || category === TitleCategory.COMICS
+  || category === TitleCategory.BOOK
+  || category === 'game'
+  || category === 'manga'
+  || category === 'comics'
+  || category === 'book';
+
+export const getProgressLabel = (category: TitleCategory | string) => {
+  if (category === TitleCategory.GAME || category === 'game') return 'Часы';
+  if (category === TitleCategory.MANGA || category === 'manga') return 'Главы';
+  if (category === TitleCategory.BOOK || category === 'book') return 'Страницы';
+  if (category === TitleCategory.COMICS || category === 'comics') return 'Тома';
+  return 'Прогресс';
+};
+
+export const formatProgressValue = (
+  value: number | null | undefined,
+  category: TitleCategory | string,
+) => {
+  if (value == null || value < 0) return null;
+  if (category === TitleCategory.GAME || category === 'game') return `${value} ч`;
+  if (category === TitleCategory.MANGA || category === 'manga') return `${value} гл.`;
+  if (category === TitleCategory.BOOK || category === 'book') return `${value} стр.`;
+  if (category === TitleCategory.COMICS || category === 'comics') return `${value} т.`;
+  return String(value);
+};
 
 export const getTitleStatusLabel = (
   status: UserTitleStatus | 'all' | string,
@@ -132,6 +165,9 @@ export const getTitleStatusLabel = (
     case UserTitleStatus.PLANNED:
     case 'planned':
       return 'В планах';
+    case UserTitleStatus.WISHLIST:
+    case 'wishlist':
+      return 'Вишлист';
     case UserTitleStatus.ON_HOLD:
     case 'on_hold':
       return 'На паузе';

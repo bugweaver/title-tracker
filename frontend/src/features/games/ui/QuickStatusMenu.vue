@@ -32,6 +32,7 @@ const statuses = computed(() => {
       : []),
     UserTitleStatus.DROPPED,
     UserTitleStatus.PLANNED,
+    UserTitleStatus.WISHLIST,
     UserTitleStatus.ON_HOLD,
   ].map((status) => ({
     id: status,

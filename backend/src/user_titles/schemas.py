@@ -25,6 +25,7 @@ class AddUserTitleRequest(BaseModel):
     finished_at: datetime | None = None
     is_completed_100_percent: bool = False
     game_platform: GamePlatform | None = None
+    progress_value: int | None = Field(None, ge=0)
     increment_completion: bool = False
 
 
@@ -53,6 +54,7 @@ class UserTitleRead(BaseModel):
     times_completed: int
     is_completed_100_percent: bool
     game_platform: GamePlatform | None
+    progress_value: int | None = None
     screenshots: list[ScreenshotRead] = []
 
 

@@ -320,6 +320,9 @@ async function handleLogout() {
             <RouterLink to="/stats" class="flex min-h-11 items-center rounded-lg px-4 text-text transition-colors hover:bg-primary-500/10" active-class="bg-primary-500/10 text-primary-500">
               Статистика
             </RouterLink>
+            <RouterLink to="/lists" class="flex min-h-11 items-center rounded-lg px-4 text-text transition-colors hover:bg-primary-500/10" active-class="bg-primary-500/10 text-primary-500">
+              Списки
+            </RouterLink>
             <RouterLink to="/community" class="flex min-h-11 items-center rounded-lg px-4 text-text transition-colors hover:bg-primary-500/10" active-class="bg-primary-500/10 text-primary-500">
               Сообщество
             </RouterLink>
@@ -422,6 +425,13 @@ async function handleLogout() {
           active-class="text-primary-500"
         >
           Статистика
+        </RouterLink>
+        <RouterLink
+          to="/lists"
+          :class="navLinkClass"
+          active-class="text-primary-500"
+        >
+          Списки
         </RouterLink>
         <RouterLink
           to="/community"

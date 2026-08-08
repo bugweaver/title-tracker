@@ -12,6 +12,7 @@ from core.models.db_helper import get_db_session
 from core.models import User
 from core.models.notification import Notification
 from core.models.title import UserTitle
+from .reminders import ensure_on_hold_reminders
 from .schemas import NotificationRead, UnreadCountResponse, ActorInfo, TitleInfo
 
 
@@ -58,6 +59,10 @@ class NotificationsController(Controller):
         offset: int = 0,
     ) -> list[NotificationRead]:
         """Get notifications for the current user."""
+        created = await ensure_on_hold_reminders(db_session, request.user.id)
+        if created:
+            await db_session.commit()
+
         stmt = (
             _build_notification_query()
             .where(Notification.recipient_id == request.user.id)
@@ -76,6 +81,10 @@ class NotificationsController(Controller):
         db_session: AsyncSession,
     ) -> UnreadCountResponse:
         """Get the number of unread notifications."""
+        created = await ensure_on_hold_reminders(db_session, request.user.id)
+        if created:
+            await db_session.commit()
+
         stmt = (
             select(func.count(Notification.id))
             .where(

@@ -7,6 +7,8 @@ import {
   useTitleStore,
   isReadingCategory,
   getReplayCompletionLabel,
+  getProgressLabel,
+  supportsProgressTracking,
   type SeriesStructure,
 } from '@/entities/title';
 import GameReviewCompletionDate from './GameReviewCompletionDate.vue';
@@ -14,6 +16,7 @@ import GameReviewFooter from './GameReviewFooter.vue';
 import GameReviewFullCompletionToggle from './GameReviewFullCompletionToggle.vue';
 import GameReviewHeader from './GameReviewHeader.vue';
 import GameReviewPlatformSelect from './GameReviewPlatformSelect.vue';
+import GameReviewProgressInput from './GameReviewProgressInput.vue';
 import GameReviewRating from './GameReviewRating.vue';
 import GameReviewReplayToggle from './GameReviewReplayToggle.vue';
 import GameReviewScreenshots from './GameReviewScreenshots.vue';
@@ -22,6 +25,7 @@ import GameReviewTextArea from './GameReviewTextArea.vue';
 import ImageLightbox from './ImageLightbox.vue';
 import SeriesSeasonsEditor from './SeriesSeasonsEditor.vue';
 import GameDlcsEditor from './GameDlcsEditor.vue';
+import AddToListMenu from '@/features/lists/ui/AddToListMenu.vue';
 
 const titleStore = useTitleStore();
 
@@ -39,6 +43,7 @@ const props = defineProps<{
     finished_at?: string | null;
     is_completed_100_percent?: boolean;
     game_platform?: GamePlatform | null;
+    progress_value?: number | null;
     screenshots?: Screenshot[];
   } | null;
 }>();
@@ -56,6 +61,8 @@ const selectedMonth = ref<number | null>(null);
 const isCompleted100Percent = ref(false);
 const incrementCompletion = ref(false);
 const selectedPlatform = ref<GamePlatform | null>(null);
+const progressValue = ref<number | null>(null);
+const isListMenuOpen = ref(false);
 const isSubmitting = ref(false);
 const isDeleting = ref(false);
 const showDeleteConfirm = ref(false);
@@ -81,16 +88,37 @@ const isGame = computed(() => props.title?.type === 'game');
 
 const isWideModal = computed(() => isSeries.value || isGame.value);
 
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key !== 'Escape' || !props.isOpen) return;
+
+  if (previewLightboxOpen.value) {
+    previewLightboxOpen.value = false;
+    return;
+  }
+  if (isListMenuOpen.value) {
+    isListMenuOpen.value = false;
+    return;
+  }
+  if (showDeleteConfirm.value) {
+    showDeleteConfirm.value = false;
+    return;
+  }
+
+  emit('close');
+};
+
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleEscapeKey);
     if (props.initialData) {
       status.value = props.initialData.status;
       rating.value = props.initialData.score || 0;
       review.value = props.initialData.review_text || '';
       isCompleted100Percent.value = Boolean(props.initialData.is_completed_100_percent);
       selectedPlatform.value = props.initialData.game_platform || null;
+      progressValue.value = props.initialData.progress_value ?? null;
       existingScreenshots.value = props.initialData.screenshots ? [...props.initialData.screenshots] : [];
       incrementCompletion.value = false;
       scoreIsManual.value = Boolean(props.initialData.score_is_manual);
@@ -111,6 +139,7 @@ watch(() => props.isOpen, (isOpen) => {
       isCompleted100Percent.value = false;
       incrementCompletion.value = false;
       selectedPlatform.value = null;
+      progressValue.value = null;
       existingScreenshots.value = [];
       scoreIsManual.value = false;
       avgScore.value = null;
@@ -124,12 +153,15 @@ watch(() => props.isOpen, (isOpen) => {
     pendingPreviews.value = [];
     showDeleteConfirm.value = false;
     deletedScreenshotIds.value = [];
+    isListMenuOpen.value = false;
   } else {
+    window.removeEventListener('keydown', handleEscapeKey);
     document.body.style.overflow = previousBodyOverflow;
   }
 });
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleEscapeKey);
   document.body.style.overflow = previousBodyOverflow;
 });
 
@@ -190,9 +222,18 @@ const statuses = computed(() => {
       : []),
     { id: UserTitleStatus.DROPPED, label: 'Дропнул' },
     { id: UserTitleStatus.PLANNED, label: 'В планах' },
+    { id: UserTitleStatus.WISHLIST, label: 'Вишлист' },
     { id: UserTitleStatus.ON_HOLD, label: 'На паузе' },
   ];
 });
+
+const canTrackProgress = computed(() =>
+  supportsProgressTracking(props.title?.type ?? '')
+);
+
+const progressLabel = computed(() =>
+  getProgressLabel(props.title?.type ?? '')
+);
 
 const emoji = computed(() => {
   if (rating.value >= 9) return '🤩';
@@ -213,7 +254,11 @@ const interpolateColor = (
 ];
 
 const ratingToneRgb = computed(() => {
-  if (status.value === UserTitleStatus.PLANNED || rating.value <= 0) {
+  if (
+    status.value === UserTitleStatus.PLANNED
+    || status.value === UserTitleStatus.WISHLIST
+    || rating.value <= 0
+  ) {
     return [113, 113, 122];
   }
 
@@ -351,7 +396,9 @@ const handleSubmit = async () => {
   }
 
   const scoreValue =
-    status.value === UserTitleStatus.PLANNED ? undefined : (rating.value || undefined);
+    status.value === UserTitleStatus.PLANNED || status.value === UserTitleStatus.WISHLIST
+      ? undefined
+      : (rating.value || undefined);
 
   try {
     const result = await titlesApi.add({
@@ -369,6 +416,7 @@ const handleSubmit = async () => {
       finished_at: finishedAtIso,
       is_completed_100_percent: canMarkCompleted100Percent.value && isCompleted100Percent.value,
       game_platform: canSelectGamePlatform.value ? selectedPlatform.value : null,
+      progress_value: canTrackProgress.value ? progressValue.value : null,
       increment_completion: canIncrementCompletion.value && incrementCompletion.value,
     });
 
@@ -450,7 +498,7 @@ const handleDelete = async () => {
       />
 
       <div class="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto p-4 sm:space-y-8 sm:p-6">
-        <div v-if="status !== UserTitleStatus.PLANNED">
+        <div v-if="status !== UserTitleStatus.PLANNED && status !== UserTitleStatus.WISHLIST">
           <GameReviewRating
             :model-value="rating"
             @update:model-value="onRatingChange"
@@ -511,6 +559,30 @@ const handleDelete = async () => {
           v-model="selectedPlatform"
           :options="platformOptions"
         />
+
+        <GameReviewProgressInput
+          v-if="canTrackProgress"
+          v-model="progressValue"
+          :label="progressLabel"
+        />
+
+        <div
+          v-if="activeUserTitleId || initialData?.userTitleId"
+          class="relative"
+        >
+          <button
+            type="button"
+            class="text-sm font-medium text-primary-500 hover:underline"
+            @click="isListMenuOpen = !isListMenuOpen"
+          >
+            Добавить в список
+          </button>
+          <AddToListMenu
+            :user-title-id="(activeUserTitleId || initialData?.userTitleId)!"
+            :open="isListMenuOpen"
+            @close="isListMenuOpen = false"
+          />
+        </div>
 
         <GameReviewTextArea v-model="review" class="pt-3" />
 

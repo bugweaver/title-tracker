@@ -15,6 +15,7 @@ export enum UserTitleStatus {
   DROPPED = 'dropped',
   PLANNED = 'planned',
   ON_HOLD = 'on_hold',
+  WISHLIST = 'wishlist',
 }
 
 export enum GamePlatform {
@@ -74,6 +75,7 @@ export interface UserTitle {
   is_completed_100_percent: boolean;
   game_platform: GamePlatform | null;
   times_completed: number;
+  progress_value?: number | null;
   created_at: string;
   updated_at: string;
   title: Title;

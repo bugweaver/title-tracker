@@ -72,6 +72,7 @@ async def sync_seasons_from_tmdb(
     existing = {s.season_number: s for s in existing_result.scalars().all()}
 
     synced: list[TitleSeason] = []
+    had_new_season = False
     for item in seasons_data:
         season_number = item["season_number"]
         season = existing.get(season_number)
@@ -86,9 +87,16 @@ async def sync_seasons_from_tmdb(
                 episode_count=item.get("episode_count"),
             )
             db_session.add(season)
+            had_new_season = True
         synced.append(season)
 
     await db_session.flush()
+
+    if had_new_season and existing:
+        from notifications.reminders import notify_title_owners_of_new_release
+
+        await notify_title_owners_of_new_release(db_session, title.id)
+
     return sorted(synced, key=lambda s: s.season_number)
 
 

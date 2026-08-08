@@ -21,6 +21,7 @@ from .notification import Notification, NotificationType
 from .screenshot import TitleScreenshot
 from .review_view import ReviewView
 from .season import TitleSeason, TitleEpisode, UserTitleSeason, UserTitleEpisode
+from .user_list import UserList, UserListItem
 
 __all__ = (
     "db_helper",
@@ -39,5 +40,7 @@ __all__ = (
     "TitleEpisode",
     "UserTitleSeason",
     "UserTitleEpisode",
+    "UserList",
+    "UserListItem",
 )
 

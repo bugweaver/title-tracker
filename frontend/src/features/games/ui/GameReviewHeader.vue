@@ -20,7 +20,10 @@ defineProps<{
     <div class="min-w-0 flex-1">
       <div class="flex justify-between items-start mb-2">
         <h2 class="break-words text-lg font-bold leading-tight text-[var(--color-text)] sm:text-xl">{{ title.title }}</h2>
-        <div v-if="status !== UserTitleStatus.PLANNED" class="flex flex-col items-center ml-2">
+        <div
+          v-if="status !== UserTitleStatus.PLANNED && status !== UserTitleStatus.WISHLIST"
+          class="flex flex-col items-center ml-2"
+        >
           <span class="game-review-score min-w-[2.5rem] text-center text-2xl font-black sm:min-w-[3rem] sm:text-3xl">
             {{ rating === 0 ? '-' : (rating === 10 ? '10' : rating.toFixed(1)) }}
           </span>
