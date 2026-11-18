@@ -57,9 +57,13 @@ jobs:
 
           # Validate Nginx configuration
           docker run --rm \
+            --add-host backend:127.0.0.1 \
+            --add-host frontend:127.0.0.1 \
+            --add-host jellyfin:127.0.0.1 \
             -v "$PWD/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" \
             -v "$CERT_DIR:/etc/nginx/certs:ro" \
-            nginx:alpine nginx -t
+            --entrypoint nginx \
+            nginx:alpine -t
 
   build-and-push:
     name: Build & Push Docker Images
@@ -221,9 +225,13 @@ jobs:
             echo "4. Validating Nginx..."
 
             docker run --rm \
+              --add-host backend:127.0.0.1 \
+              --add-host frontend:127.0.0.1 \
+              --add-host jellyfin:127.0.0.1 \
               -v "$RELEASE_DIR/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" \
               -v "$CERT_DIR:/etc/nginx/certs:ro" \
-              nginx:alpine nginx -t
+              --entrypoint nginx \
+              nginx:alpine -t
 
             echo "5. Logging in to GHCR..."
 
