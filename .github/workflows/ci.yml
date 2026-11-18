@@ -60,7 +60,7 @@ jobs:
             --add-host backend:127.0.0.1 \
             --add-host frontend:127.0.0.1 \
             --add-host jellyfin:127.0.0.1 \
-            -add-host xui:127.0.0.1 \
+            --add-host xui:127.0.0.1 \
             -v "$PWD/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" \
             -v "$CERT_DIR:/etc/nginx/certs:ro" \
             --entrypoint nginx \
@@ -229,7 +229,7 @@ jobs:
               --add-host backend:127.0.0.1 \
               --add-host frontend:127.0.0.1 \
               --add-host jellyfin:127.0.0.1 \
-              -add-host xui:127.0.0.1 \
+              --add-host xui:127.0.0.1 \
               -v "$RELEASE_DIR/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" \
               -v "$CERT_DIR:/etc/nginx/certs:ro" \
               --entrypoint nginx \
