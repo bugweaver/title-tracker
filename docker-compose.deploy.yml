@@ -4,8 +4,6 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/title-tracker/backend:latest
     container_name: title_tracker_backend
     restart: always
-    ports:
-      - "8000:8000"
     volumes:
       - static_volume:/app/static
     env_file:
@@ -90,6 +88,20 @@ services:
     networks:
       - tt_network
 
+  xui:
+    image: ghcr.io/mhsanaei/3x-ui:v3.11.0
+    container_name: title_tracker_3xui
+    restart: unless-stopped
+    environment:
+      XRAY_VMESS_AEAD_FORCED: "false"
+      XUI_ENABLE_FAIL2BAN: "false"
+    volumes:
+      - xui_data:/etc/x-ui/
+    ports:
+      - "127.0.0.1:2053:2053"
+    tty: true
+    networks:
+      - tt_network
 networks:
   tt_network:
     driver: bridge
@@ -100,3 +112,4 @@ volumes:
   static_volume:
   jellyfin_config:
   jellyfin_cache:
+  xui_data:
