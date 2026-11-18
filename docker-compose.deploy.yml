@@ -49,6 +49,8 @@ services:
       - jellyfin
     networks:
       - tt_network
+    sysctls:
+      net.ipv4.tcp_congestion_control: bbr
 
   db:
     image: postgres:18-alpine
@@ -102,6 +104,8 @@ services:
     tty: true
     networks:
       - tt_network
+    sysctls:
+      net.ipv4.tcp_congestion_control: bbr
 networks:
   tt_network:
     driver: bridge
